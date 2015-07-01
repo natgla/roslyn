@@ -17,7 +17,7 @@ namespace Microsoft.CodeAnalysis.CSharp.CommandLine
                 // clientDir: AppContext.BaseDirectory,
                 clientDir: null,
                 workingDir: Directory.GetCurrentDirectory(),
-                sdkDir: @"C:\Windows\Microsoft.NET\Framework\v4.0.30319", 
+                sdkDir: @"C:\Windows\Microsoft.NET\Framework64\v4.0.30319", 
                 language: RequestLanguage.CSharpCompile,
                 fallbackCompiler: Csc.Run);
     }
