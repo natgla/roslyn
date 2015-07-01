@@ -554,7 +554,8 @@ namespace Microsoft.CodeAnalysis
                 uint sqmSession = 0u;
                 try
                 {
-                    sqm = SqmServiceProvider.TryGetSqmService(_clientDirectory);
+                    // _clientDirectory isn't known, no sqm:
+                    // sqm = SqmServiceProvider.TryGetSqmService(_clientDirectory);
                     if (sqm != null)
                     {
                         sqm.BeginSession(this.GetSqmAppID(), false, out sqmSession);
