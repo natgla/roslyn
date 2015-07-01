@@ -918,7 +918,8 @@ namespace Microsoft.CodeAnalysis
                         // Applications use a default manifest if one is not specified.
                         if (manifestContents == null)
                         {
-                            manifestContents = typeof(Compilation).GetTypeInfo().Assembly.GetManifestResourceStream("Microsoft.CodeAnalysis.Resources.default.win32manifest");
+                            // No, can't work with manifests; let it be without one:
+                            // manifestContents = typeof(Compilation).GetTypeInfo().Assembly.GetManifestResourceStream("Microsoft.CodeAnalysis.Resources.default.win32manifest");
                         }
                     }
                     else
