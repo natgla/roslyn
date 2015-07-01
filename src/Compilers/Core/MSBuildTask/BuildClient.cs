@@ -61,23 +61,23 @@ namespace Microsoft.CodeAnalysis.BuildTasks
                 return CommonCompiler.Failed;
             }
 
-            if (hasShared)
-            {
-                var responseTask = TryRunServerCompilation(
-                    language,
-                    clientDir,
-                    workingDir,
-                    parsedArgs,
-                    default(CancellationToken),
-                    keepAlive: keepAlive,
-                    libEnvVariable: Environment.GetEnvironmentVariable("LIB"));
+            ////if (hasShared)
+            ////{
+            ////    var responseTask = TryRunServerCompilation(
+            ////        language,
+            ////        clientDir,
+            ////        workingDir,
+            ////        parsedArgs,
+            ////        default(CancellationToken),
+            ////        keepAlive: keepAlive,
+            ////        libEnvVariable: Environment.GetEnvironmentVariable("LIB"));
 
-                var response = responseTask.Result;
-                if (response != null)
-                {
-                    return HandleResponse(response);
-                }
-            }
+            ////    var response = responseTask.Result;
+            ////    if (response != null)
+            ////    {
+            ////        return HandleResponse(response);
+            ////    }
+            ////}
 
             return fallbackCompiler(clientDir, sdkDir, parsedArgs.ToArray());
         }
