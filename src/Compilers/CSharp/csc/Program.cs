@@ -13,7 +13,9 @@ namespace Microsoft.CodeAnalysis.CSharp.CommandLine
         public static int Main(string[] args)
             => BuildClient.RunWithConsoleOutput(
                 args,
-                clientDir: AppContext.BaseDirectory,
+                // Does not work for an exe compiled with ProjectN:
+                // clientDir: AppContext.BaseDirectory,
+                clientDir: null,
                 workingDir: Directory.GetCurrentDirectory(),
                 sdkDir: @"C:\Windows\Microsoft.NET\Framework\v4.0.30319", 
                 language: RequestLanguage.CSharpCompile,
