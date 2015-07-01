@@ -852,11 +852,15 @@ namespace Microsoft.Cci
             {
                 try
                 {
-                    // Marshal.GetNativeVariantForObject would create a variant with type VT_DATE and value equal to the
-                    // number of days since 1899/12/30.  However, ConstantValue::VariantFromConstant in the native VB
-                    // compiler actually created a variant with type VT_DATE and value equal to the tick count.
-                    // http://blogs.msdn.com/b/ericlippert/archive/2003/09/16/eric-s-complete-guide-to-vt-date.aspx
-                    _symWriter.DefineConstant2(name, new VariantStructure((DateTime)value), constantSignatureToken);
+                    // Does not work for ProjectN:
+
+                    //// Marshal.GetNativeVariantForObject would create a variant with type VT_DATE and value equal to the
+                    //// number of days since 1899/12/30.  However, ConstantValue::VariantFromConstant in the native VB
+                    //// compiler actually created a variant with type VT_DATE and value equal to the tick count.
+                    //// http://blogs.msdn.com/b/ericlippert/archive/2003/09/16/eric-s-complete-guide-to-vt-date.aspx
+                    //_symWriter.DefineConstant2(name, new VariantStructure((DateTime)value), constantSignatureToken);
+
+                    _symWriter.DefineConstant2(name, (DateTime)value, constantSignatureToken);
                 }
                 catch (Exception ex)
                 {
