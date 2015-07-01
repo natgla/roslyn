@@ -540,11 +540,46 @@ namespace Microsoft.Cci
             return s_lazyCorSymWriterSxSType;
         }
 
+        [DllImport("api-ms-win-core-com-l1-1-0.dll")]
+        static internal unsafe extern int CoCreateInstance(
+            [In, MarshalAs(UnmanagedType.LPStruct)] Guid clsid,
+            IntPtr pUnkOuter,
+            int context,
+            [In, MarshalAs(UnmanagedType.LPStruct)] Guid iid,
+            [MarshalAs(UnmanagedType.IUnknown)] out Object ppv
+        );
+
         public void SetMetadataEmitter(MetadataWriter metadataWriter)
         {
             try
             {
-                var instance = (ISymUnmanagedWriter2)(_symWriterFactory != null ? _symWriterFactory() : Activator.CreateInstance(GetCorSymWriterSxSType()));
+
+                ISymUnmanagedWriter2 instance;
+                if (_symWriterFactory != null)
+                {
+                    instance = (ISymUnmanagedWriter2)_symWriterFactory();
+                }
+                else
+                {
+                    // this doesn't work on ProjectN: Marshal.GetTypeFromCLSID is not implemented there
+                    // instance = (ISymUnmanagedWriter2) Activator.CreateInstance(GetCorSymWriterSxSType());
+
+                    object comWriter;
+                    Guid clsid = new Guid("0AE2DEB0-F901-478b-BB9F-881EE8066788");
+                    Guid iid = new Guid("0B97726E-9E6D-4f05-9A26-424022093CAA"); // typeof(ISymUnmanagedWriter2).GUID;
+                    int hr = CoCreateInstance(
+                        clsid,
+                        IntPtr.Zero,
+                        0x15, // CLSCTX_SERVER
+                        iid,
+                        out comWriter
+                        );
+                    if (hr < 0)
+                    {
+                        throw Marshal.GetExceptionForHR(hr);
+                    }
+                    instance = (ISymUnmanagedWriter2)comWriter;
+                }
 
                 // Important: If the stream is not specified or if it is non-empty the SymWriter appends data to it (provided it contains valid PDB)
                 // and the resulting PDB has Age = existing_age + 1.
