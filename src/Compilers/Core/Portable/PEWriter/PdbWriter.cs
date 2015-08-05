@@ -906,7 +906,16 @@ namespace Microsoft.Cci
             {
                 try
                 {
-                    _symWriter.DefineConstant2(name, value, constantSignatureToken);
+                    if (value is char)
+                    {
+                        // workaround for ProjectN Variant ctor handling chars as unknown:
+                        char tmp = (char)value;
+                        _symWriter.DefineConstant2(name, (ushort)tmp, constantSignatureToken);
+                    }
+                    else
+                    {
+                        _symWriter.DefineConstant2(name, value, constantSignatureToken);
+                    }
                 }
                 catch (Exception ex)
                 {
