@@ -24,7 +24,8 @@ namespace Microsoft.CodeAnalysis.CSharp.CommandLine
             // This will not work:
             // var responseFile = Path.Combine(clientDirectory, CSharpCompiler.ResponseFileName);
             // No way to find out real clientDirectory, so getting response file from framework install.
-            var responseFile = Path.Combine(sdkDirectory, CSharpCompiler.ResponseFileName); 
+            // var responseFile = Path.Combine(sdkDirectory, CSharpCompiler.ResponseFileName); 
+            var responseFile = @"c:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.rsp";
             Csc compiler = new Csc(responseFile, clientDirectory, Directory.GetCurrentDirectory(), sdkDirectory, args);
 
             return ConsoleUtil.RunWithOutput(compiler.Arguments.Utf8Output, (textWriterOut, _) => compiler.Run(textWriterOut));
