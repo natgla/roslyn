@@ -20,5 +20,6 @@
     <Type Name="Microsoft.Cci.PdbMetadataWrapper" Dynamic="Required All" MarshalObject="Required All" />
     <Type Name="Microsoft.Cci.ISymUnmanagedWriter2Helper" Dynamic="Required All" MarshalObject="Required All" />
     <Type Name="Roslyn.Utilities.ComStreamWrapper" Dynamic="Required All" MarshalObject="Required All" />
+    <Type Name="Microsoft.CodeAnalysis.ConstantValue" Dynamic="Required All" />
   </Application>
 </Directives>
