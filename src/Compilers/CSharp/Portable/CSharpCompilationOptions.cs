@@ -28,6 +28,7 @@ namespace Microsoft.CodeAnalysis.CSharp
 
         // Defaults correspond to the compiler's defaults or indicate that the user did not specify when that is significant.
         // That's significant when one option depends on another's setting. SubsystemVersion depends on Platform and Target.
+        // TODO: change back concurrentBuild !!!! 
         public CSharpCompilationOptions(
             OutputKind outputKind,
             string moduleName = null,
@@ -45,7 +46,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             ReportDiagnostic generalDiagnosticOption = ReportDiagnostic.Default,
             int warningLevel = 4,
             IEnumerable<KeyValuePair<string, ReportDiagnostic>> specificDiagnosticOptions = null,
-            bool concurrentBuild = true,
+            bool concurrentBuild = false,      
             XmlReferenceResolver xmlReferenceResolver = null,
             SourceReferenceResolver sourceReferenceResolver = null,
             MetadataReferenceResolver metadataReferenceResolver = null,

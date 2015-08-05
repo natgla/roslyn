@@ -54,7 +54,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             bool optimize = false;
             bool checkOverflow = false;
             bool allowUnsafe = false;
-            bool concurrentBuild = true;
+            bool concurrentBuild = false;       // TODO: change back!!!!!     
             bool emitPdb = false;
             string pdbPath = null;
             bool noStdLib = false;
@@ -543,7 +543,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                             if (value != null)
                                 break;
 
-                            concurrentBuild = true;
+                            concurrentBuild = false;        // TODO: remove when bug is found!!!!!!!!!!!!!!!!!!!!!!!
                             continue;
 
                         case "p-":
