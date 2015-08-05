@@ -15,7 +15,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <SolutionDir Condition="'$(SolutionDir)' == '' OR '$(SolutionDir)' == '*Undefined*'">..\..\..\..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
-    <DefineConstants>$(DefineConstants);COMPILERCORE</DefineConstants>
+    <DefineConstants>$(DefineConstants);COMPILERCORE;ON_PROJECTN</DefineConstants>
     <TestCoreClr>True</TestCoreClr>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">

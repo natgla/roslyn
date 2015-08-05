@@ -64,12 +64,14 @@ namespace Microsoft.CodeAnalysis
 
         internal string GetAssemblyFileVersion()
         {
+#if (!ON_PROJECTN)
             if (_clientDirectory != null)
             {
                 var name = $"{typeof(CommonCompiler).GetTypeInfo().Assembly.GetName().Name}.dll";
                 var filePath = Path.Combine(_clientDirectory, name);
                 return FileVersionInfo.GetVersionInfo(filePath).FileVersion;
             }
+#endif
 
             return "";
         }
