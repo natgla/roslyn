@@ -210,9 +210,15 @@ namespace Microsoft.CodeAnalysis
                     continue;
                 }
 
-                consoleOutput.WriteLine(DiagnosticFormatter.Format(diag, this.Culture));
-                ErrorLogger.LogDiagnostic(diag, this.Culture, errorLogger);
-
+                // ProjectN: do not report warnings, because with ProjectN we don't have resources, it'll be way too different work done here:
+                if (diag.Severity != DiagnosticSeverity.Warning)
+                {
+                    consoleOutput.WriteLine(DiagnosticFormatter.Format(diag, this.Culture));
+                    ErrorLogger.LogDiagnostic(diag, this.Culture, errorLogger);
+                }else
+                {
+                    consoleOutput.WriteLine("WARNING here");
+                }
                 if (diag.Severity == DiagnosticSeverity.Error)
                 {
                     hasErrors = true;

@@ -247,9 +247,10 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <param name="consoleOutput"></param>
         public override void PrintLogo(TextWriter consoleOutput)
         {
-            consoleOutput.WriteLine(ErrorFacts.GetMessage(MessageID.IDS_LogoLine1, Culture), GetToolName(), GetAssemblyFileVersion());
-            consoleOutput.WriteLine(ErrorFacts.GetMessage(MessageID.IDS_LogoLine2, Culture));
-            consoleOutput.WriteLine();
+            // ProjectN: don't do this, because we don't have resources (workaround to have same load as il):
+            //consoleOutput.WriteLine(ErrorFacts.GetMessage(MessageID.IDS_LogoLine1, Culture), GetToolName(), GetAssemblyFileVersion());
+            //consoleOutput.WriteLine(ErrorFacts.GetMessage(MessageID.IDS_LogoLine2, Culture));
+            consoleOutput.WriteLine("LOGO here");
         }
 
         internal override string GetToolName()
