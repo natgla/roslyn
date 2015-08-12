@@ -63,6 +63,7 @@ namespace Microsoft.CodeAnalysis.BuildTasks
                 return CommonCompiler.Failed;
             }
 
+#if (!ON_PROJECTN)
             if (hasShared)
             {
                 var responseTask = TryRunServerCompilation(
@@ -80,6 +81,9 @@ namespace Microsoft.CodeAnalysis.BuildTasks
                     return HandleResponse(response, clientDir, sdkDir, analyzerLoader, fallbackCompiler, parsedArgs);
                 }
             }
+#else
+            // ProjectN: Don't try to use service: it'll be more difficult to measure performance
+#endif
 
             return fallbackCompiler(clientDir, sdkDir, parsedArgs.ToArray(), analyzerLoader);
         }

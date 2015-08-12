@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Application>
+    <!-- 
+    <Assembly Name="csc" Dynamic="Required All" />
+    <Assembly Name="Microsoft.CodeAnalysis.CSharp.Desktop" Dynamic="Required All" /> 
+    ...
+    -->
+
+    <Type Name="System.Security.Cryptography.HashAlgorithm" Dynamic="Required All" />
+    <Type Name="Microsoft.CodeAnalysis.CSharp.CSharpCompiler" Browse="All">
+        <Subtypes Browse="All" />
+    </Type>
+    <Type Name="System.Security.Cryptography.SHA1" Dynamic="Required All" />
+    <Type Name="System.Security.Cryptography.SHA256" Dynamic="Required All" />
+    <Type Name="System.Security.Cryptography.SHA384" Dynamic="Required All" />
+    <Type Name="System.Security.Cryptography.SHA512" Dynamic="Required All" />
+    <Type Name="System.Security.Cryptography.MD5" Dynamic="Required All" />
+    <Type Name="System.IO.File" Dynamic="Required All" />  
+    <Type Name="Microsoft.Cci.PdbMetadataWrapper" Dynamic="Required All" MarshalObject="Required All" />
+    <Type Name="Microsoft.Cci.ISymUnmanagedWriter2Helper" Dynamic="Required All" MarshalObject="Required All" />
+    <Type Name="Roslyn.Utilities.ComStreamWrapper" Dynamic="Required All" MarshalObject="Required All" />
+    <Type Name="Microsoft.CodeAnalysis.ConstantValue" Dynamic="Required All" />
+  </Application>
+</Directives>
