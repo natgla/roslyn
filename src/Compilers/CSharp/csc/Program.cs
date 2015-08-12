@@ -13,9 +13,17 @@ namespace Microsoft.CodeAnalysis.CSharp.CommandLine
         public static int Main(string[] args)
             => BuildClient.RunWithConsoleOutput(
                 args,
+#if (!ON_PROJECTN)
                 clientDir: AppDomain.CurrentDomain.BaseDirectory,
+#else
+                clientDir: null,
+#endif
                 workingDir: Directory.GetCurrentDirectory(),
+#if (!ON_PROJECTN)
                 sdkDir: RuntimeEnvironment.GetRuntimeDirectory(),
+#else
+                sdkDir: @"C:\Windows\Microsoft.NET\Framework\v4.0.30319",   // TODO: do we need Framework64?
+#endif
                 analyzerLoader: new SimpleAnalyzerAssemblyLoader(),
                 language: RequestLanguage.CSharpCompile,
                 fallbackCompiler: Csc.Run);

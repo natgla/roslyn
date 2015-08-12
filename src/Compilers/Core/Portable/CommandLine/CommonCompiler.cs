@@ -212,9 +212,20 @@ namespace Microsoft.CodeAnalysis
                     continue;
                 }
 
+#if (!ON_PROJECTN)
                 consoleOutput.WriteLine(DiagnosticFormatter.Format(diag, this.Culture));
                 ErrorLogger.LogDiagnostic(diag, this.Culture, errorLogger);
-
+#else
+                // ProjectN: do not report warnings, because with ProjectN we don't have resources, it'll be way too different work done here:
+                if (diag.Severity != DiagnosticSeverity.Warning)
+                {
+                    consoleOutput.WriteLine(DiagnosticFormatter.Format(diag, this.Culture));
+                    ErrorLogger.LogDiagnostic(diag, this.Culture, errorLogger);
+                }else
+                {
+                    consoleOutput.WriteLine("WARNING here");
+                }
+#endif
                 if (diag.Severity == DiagnosticSeverity.Error)
                 {
                     hasErrors = true;
@@ -634,7 +645,11 @@ namespace Microsoft.CodeAnalysis
                 uint sqmSession = 0u;
                 try
                 {
+#if (!ON_PROJECTN)
                     sqm = SqmServiceProvider.TryGetSqmService(_clientDirectory);
+#else
+                    // ProjectN: Don't use sqm service: we don't know _clientDirectory
+#endif					
                     if (sqm != null)
                     {
                         sqm.BeginSession(this.GetSqmAppID(), false, out sqmSession);

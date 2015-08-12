@@ -794,8 +794,10 @@ namespace Microsoft.Cci
 
             if (symWriter == null)
             {
+#if (!ON_PROJECTN)
                 // Try to find a registered CLR implementation
                 symWriter = Activator.CreateInstance(GetCorSymWriterSxSType());
+#endif
             }
 
             return symWriter;
@@ -1207,24 +1209,49 @@ namespace Microsoft.Cci
             }
             else if (value is DateTime)
             {
-                // Marshal.GetNativeVariantForObject would create a variant with type VT_DATE and value equal to the
-                // number of days since 1899/12/30.  However, ConstantValue::VariantFromConstant in the native VB
-                // compiler actually created a variant with type VT_DATE and value equal to the tick count.
-                // http://blogs.msdn.com/b/ericlippert/archive/2003/09/16/eric-s-complete-guide-to-vt-date.aspx
-                var dt = (DateTime)value;
-                _symWriter.DefineConstant2(name, new VariantStructure(dt), constantSignatureToken);
-                if (_callLogger.LogOperation(OP.DefineConstant2))
+                try
                 {
-                    _callLogger.LogArgument(name);
-                    _callLogger.LogArgument(constantSignatureToken);
-                    _callLogger.LogArgument(dt.ToBinary());
+                    // Marshal.GetNativeVariantForObject would create a variant with type VT_DATE and value equal to the
+                    // number of days since 1899/12/30.  However, ConstantValue::VariantFromConstant in the native VB
+                    // compiler actually created a variant with type VT_DATE and value equal to the tick count.
+                    // http://blogs.msdn.com/b/ericlippert/archive/2003/09/16/eric-s-complete-guide-to-vt-date.aspx
+                    var dt = (DateTime)value;
+#if (!ON_PROJECTN)
+                    _symWriter.DefineConstant2(name, new VariantStructure(dt), constantSignatureToken);
+#else
+					// VariantStructure doesn't work on ProjectN
+                    _symWriter.DefineConstant2(name, dt, constantSignatureToken);
+#endif
+                    if (_callLogger.LogOperation(OP.DefineConstant2))
+                    {
+                        _callLogger.LogArgument(name);
+                        _callLogger.LogArgument(constantSignatureToken);
+                        _callLogger.LogArgument(dt.ToBinary());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new PdbWritingException(ex);
                 }
             }
             else
             {
                 try
                 {
+#if (!ON_PROJECTN)
                     _symWriter.DefineConstant2(name, value, constantSignatureToken);
+#else
+                    // workaround for ProjectN Variant ctor handling chars as unknown:
+                    if (value is char)
+                    {
+                        char tmp = (char)value;
+                        _symWriter.DefineConstant2(name, (ushort)tmp, constantSignatureToken);
+                    }
+                    else
+                    {
+                        _symWriter.DefineConstant2(name, value, constantSignatureToken);
+                    }
+#endif					
                     if (_callLogger.LogOperation(OP.DefineConstant2))
                     {
                         _callLogger.LogArgument(name);
@@ -1465,6 +1492,6 @@ namespace Microsoft.Cci
             }
         }
 
-        #endregion
+#endregion
     }
 }
