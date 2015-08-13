@@ -110,10 +110,6 @@
     <VbcToolExe Condition="Exists('$(BootstrapBuildPath)\vbc2.exe')">vbc2.exe</VbcToolExe>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildingWithProjectN)' != ''">
-    <DefineConstants>$(DefineConstants);ON_PROJECTN</DefineConstants>
-  </PropertyGroup>
-
   <!-- Common project settings -->
   <PropertyGroup>
     <DeployToSamplesSubfolder Condition="'$(DeployToSamplesSubfolder)' == ''">false</DeployToSamplesSubfolder>
@@ -232,6 +228,10 @@
       </PropertyGroup>
     </When>
   </Choose>
+
+  <PropertyGroup Condition="'$(BuildingWithProjectN)' != ''">
+    <DefineConstants>$(DefineConstants);ON_PROJECTN</DefineConstants>
+  </PropertyGroup>
 
   <PropertyGroup>
     <!-- SN is in the Framework SDK tools path, but TargetFrameworkSDKToolsDirectory isn't always available  -->
