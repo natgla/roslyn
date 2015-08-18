@@ -38,10 +38,18 @@ namespace Roslyn.Test.Utilities
             throw new NotImplementedException();
         }
 
+#if (!ON_PROJECTN)
         public virtual void DefineConstant2(string name, VariantStructure value, uint sigToken)
         {
             throw new NotImplementedException();
         }
+#else
+        // Unfortunately, VariantStructure doesn't work for ProjectN.
+        public virtual void DefineConstant2(string name, object value, uint sigToken)
+        {
+            throw new NotImplementedException();
+        }
+#endif	
 
         public virtual ISymUnmanagedDocumentWriter DefineDocument(string url, ref Guid language, ref Guid languageVendor, ref Guid documentType)
         {
