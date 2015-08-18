@@ -233,7 +233,8 @@
     </When>
   </Choose>
 
-  <PropertyGroup Condition="'$(BuildingWithProjectN)' != ''">
+  <!-- We build on ProjectN only C# code currently: -->
+  <PropertyGroup Condition="'$(BuildingWithProjectN)' != '' AND '$(ProjectLanguage)' == 'CSharp'">
     <DefineConstants>$(DefineConstants);ON_PROJECTN</DefineConstants>
   </PropertyGroup>
 
