@@ -86,6 +86,6 @@
     <Import Project="..\..\..\..\build\Targets\VSL.Imports.targets" />
   </ImportGroup>
   <Target Name="CopyExtraFiles" AfterTargets="Build">
-    <Copy SourceFiles="@(None)" DestinationFolder="$(OutDir)" Condition="'%(Extension)' == '.dll'" />
-  </Target>
+    <Copy SourceFiles="@(None)" DestinationFolder="$(OutDir)" Condition="'%(Extension)' == '.dll' AND '$(BuildingWithProjectN)' == ''" />
+  </Target> 
 </Project>
