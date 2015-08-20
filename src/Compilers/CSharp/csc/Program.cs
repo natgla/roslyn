@@ -22,7 +22,11 @@ namespace Microsoft.CodeAnalysis.CSharp.CommandLine
 #if (!ON_PROJECTN)
                 sdkDir: RuntimeEnvironment.GetRuntimeDirectory(),
 #else
-                sdkDir: @"C:\Windows\Microsoft.NET\Framework\v4.0.30319",   // TODO: do we need Framework64?
+#if (ON_PROJECTN32)
+                sdkDir: @"C:\Windows\Microsoft.NET\Framework\v4.0.30319",
+#else
+                sdkDir: @"C:\Windows\Microsoft.NET\Framework64\v4.0.30319",
+#endif
 #endif
                 analyzerLoader: new SimpleAnalyzerAssemblyLoader(),
                 language: RequestLanguage.CSharpCompile,

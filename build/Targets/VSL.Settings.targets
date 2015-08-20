@@ -237,6 +237,10 @@
   <PropertyGroup Condition="'$(BuildingWithProjectN)' != '' AND '$(ProjectLanguage)' == 'CSharp'">
     <DefineConstants>$(DefineConstants);ON_PROJECTN</DefineConstants>
   </PropertyGroup>
+  <!-- Prepare code for x86 compilation: -->
+  <PropertyGroup Condition="'$(BuildingWithProjectN32)' != '' AND '$(ProjectLanguage)' == 'CSharp'">
+    <DefineConstants>$(DefineConstants);ON_PROJECTN;ON_PROJECTN32</DefineConstants>
+  </PropertyGroup>
 
   <PropertyGroup>
     <!-- SN is in the Framework SDK tools path, but TargetFrameworkSDKToolsDirectory isn't always available  -->

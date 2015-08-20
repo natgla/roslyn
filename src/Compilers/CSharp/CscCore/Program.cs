@@ -12,10 +12,15 @@ namespace Microsoft.CodeAnalysis.CSharp.CommandLine
             => Csc.Run(args: args,
 #if (!ON_PROJECTN)
                        clientDirectory: AppContext.BaseDirectory,
+                       sdkDirectory: @"C:\Windows\Microsoft.NET\Framework\v4.0.30319",
 #else
                        clientDirectory: null,
+#if (ON_PROJECTN32)
+                       sdkDirectory: @"C:\Windows\Microsoft.NET\Framework\v4.0.30319",
+#else
+                       sdkDirectory: @"C:\Windows\Microsoft.NET\Framework64\v4.0.30319",
 #endif
-                       sdkDirectory: @"C:\Windows\Microsoft.NET\Framework\v4.0.30319",   // TODO: do we need Framework64?
+#endif
                        analyzerLoader: new NoOpAnalyzerAssemblyLoader());
     }
 }

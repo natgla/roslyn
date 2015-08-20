@@ -747,11 +747,21 @@ namespace Microsoft.Cci
 
         private static bool s_MicrosoftDiaSymReaderNativeLoadFailed;
 
+#if (!ON_PROJECTN)
         [DllImport("Microsoft.DiaSymReader.Native.x86.dll", EntryPoint = "CreateSymWriter")]
         private extern static void CreateSymWriter32(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)]out object symWriter);
 
         [DllImport("Microsoft.DiaSymReader.Native.amd64.dll", EntryPoint = "CreateSymWriter")]
         private extern static void CreateSymWriter64(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)]out object symWriter);
+#else
+#if (ON_PROJECTN32)
+        [DllImport("Microsoft.DiaSymReader.Native.x86.dll", EntryPoint = "CreateSymWriter")]
+        private extern static void CreateSymWriter32(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)]out object symWriter);
+#else
+        [DllImport("Microsoft.DiaSymReader.Native.amd64.dll", EntryPoint = "CreateSymWriter")]
+        private extern static void CreateSymWriter64(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)]out object symWriter);
+#endif
+#endif
 
         private static Type GetCorSymWriterSxSType()
         {
@@ -774,6 +784,7 @@ namespace Microsoft.Cci
                 try
                 {
                     var guid = new Guid(SymWriterClsid);
+#if (!ON_PROJECTN)
                     if (IntPtr.Size == 4)
                     {
                         CreateSymWriter32(ref guid, out symWriter);
@@ -782,6 +793,13 @@ namespace Microsoft.Cci
                     {
                         CreateSymWriter64(ref guid, out symWriter);
                     }
+#else
+#if (ON_PROJECTN32)
+                        CreateSymWriter32(ref guid, out symWriter);
+#else
+                        CreateSymWriter64(ref guid, out symWriter);
+#endif
+#endif
                 }
                 catch (Exception)
                 {
@@ -1249,7 +1267,7 @@ namespace Microsoft.Cci
                     {
                         _symWriter.DefineConstant2(name, value, constantSignatureToken);
                     }
-#endif					
+#endif
                     if (_callLogger.LogOperation(OP.DefineConstant2))
                     {
                         _callLogger.LogArgument(name);
