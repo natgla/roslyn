@@ -12,6 +12,7 @@ namespace Roslyn.Test.PdbUtilities
 {
     public static class SymReaderFactory
     {
+#if (!ON_PROJECTN)
         [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
         [DllImport("Microsoft.DiaSymReader.Native.x86.dll", EntryPoint = "CreateSymReader")]
         private extern static void CreateSymReader32(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)]out object symReader);
@@ -19,12 +20,22 @@ namespace Roslyn.Test.PdbUtilities
         [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
         [DllImport("Microsoft.DiaSymReader.Native.amd64.dll", EntryPoint = "CreateSymReader")]
         private extern static void CreateSymReader64(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)]out object symReader);
+#else
+#if (ON_PROJECTN32)
+        [DllImport("Microsoft.DiaSymReader.Native.x86.dll", EntryPoint = "CreateSymReader")]
+        private extern static void CreateSymReader32(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)]out object symReader);
+#else
+        [DllImport("Microsoft.DiaSymReader.Native.amd64.dll", EntryPoint = "CreateSymReader")]
+        private extern static void CreateSymReader64(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)]out object symReader);
+#endif
+#endif
 
         private static ISymUnmanagedReader3 CreateNativeSymReader(Stream pdbStream, object metadataImporter)
         {
             object symReader = null;
 
             var guid = default(Guid);
+#if (!ON_PROJECTN)
             if (IntPtr.Size == 4)
             {
                 CreateSymReader32(ref guid, out symReader);
@@ -33,6 +44,13 @@ namespace Roslyn.Test.PdbUtilities
             {
                 CreateSymReader64(ref guid, out symReader);
             }
+#else
+#if (ON_PROJECTN32)
+                CreateSymReader32(ref guid, out symReader);
+#else
+                CreateSymReader64(ref guid, out symReader);
+#endif
+#endif
 
             var reader = (ISymUnmanagedReader3)symReader;
             int hr = reader.Initialize(metadataImporter, null, null, new ComStreamWrapper(pdbStream));
