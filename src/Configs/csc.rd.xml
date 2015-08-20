@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
   <Application>
-    <!-- 
+     
+ <!-- This doesn't work: all missing types give an error.
     <Assembly Name="csc" Dynamic="Required All" />
-    <Assembly Name="Microsoft.CodeAnalysis.CSharp.Desktop" Dynamic="Required All" /> 
-    ...
-    -->
+    <Assembly Name="Microsoft.CodeAnalysis.CSharp.Desktop" Dynamic="Required All" />
+    <Type Name="System.IO.Pipes.NamedPipeClientStream" Dynamic="Excluded" MarshalObject="Excluded" />
+    <Type Name="System.Diagnostics.Process" Dynamic="Excluded" MarshalObject="Excluded" />
+    <Type Name="System.IO.Pipes.PipeStream" Dynamic="Excluded" MarshalObject="Excluded" />
+-->
+
 
     <Type Name="System.Security.Cryptography.HashAlgorithm" Dynamic="Required All" />
     <Type Name="Microsoft.CodeAnalysis.CSharp.CSharpCompiler" Browse="All">
@@ -16,10 +20,21 @@
     <Type Name="System.Security.Cryptography.SHA384" Dynamic="Required All" />
     <Type Name="System.Security.Cryptography.SHA512" Dynamic="Required All" />
     <Type Name="System.Security.Cryptography.MD5" Dynamic="Required All" />
-    <Type Name="System.IO.File" Dynamic="Required All" />  
+    <Type Name="System.IO.File" Dynamic="Required All" />
+    <Type Name="System.IO.Path" Dynamic="Required All" />
+    <Type Name="System.IO.FileStream" Dynamic="Required All" />
+    <Type Name="System.Diagnostics.FileVersionInfo" Dynamic="Required All" />
+    <Type Name="System.IO.FileSystem" Dynamic="Required All" />
+    <Type Name="System.IO.FileSystem.Primitives" Dynamic="Required All" />
+    <Type Name="System.Reflection" Dynamic="Required All" />
+    <Type Name="System.Runtime" Dynamic="Required All" />
+    <Type Name="System.Runtime.Extensions" Dynamic="Required All" />
+    <Type Name="System.Xml.XPath.XDocument" Dynamic="Required All" />
+
     <Type Name="Microsoft.Cci.PdbMetadataWrapper" Dynamic="Required All" MarshalObject="Required All" />
     <Type Name="Microsoft.Cci.ISymUnmanagedWriter2Helper" Dynamic="Required All" MarshalObject="Required All" />
     <Type Name="Roslyn.Utilities.ComStreamWrapper" Dynamic="Required All" MarshalObject="Required All" />
+    <Type Name="Roslyn.Utilities.PortableShim" Dynamic="Required All" />
     <Type Name="Microsoft.CodeAnalysis.ConstantValue" Dynamic="Required All" />
   </Application>
 </Directives>
