@@ -6231,42 +6231,48 @@ class Program
             AssertFormat(expected, code);
         }
 
+        [WorkItem(4421, "https://github.com/dotnet/roslyn/issues/4421")]
         [WorkItem(4240, "https://github.com/dotnet/roslyn/issues/4240")]
         [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
         public void VerifySpacingAfterMethodDeclarationName_Default()
         {
-            var code = @"class Program
+            var code = @"class Program<T>
 {
     public static Program operator +   (Program p1, Program p2) { return null; }
     public static implicit operator string (Program p) { return null; }
     public static void M  () { }
+    public void F<T>    () { }
 }";
-            var expected = @"class Program
+            var expected = @"class Program<T>
 {
     public static Program operator +(Program p1, Program p2) { return null; }
     public static implicit operator string(Program p) { return null; }
     public static void M() { }
+    public void F<T>() { }
 }";
             AssertFormat(expected, code);
         }
 
         [WorkItem(4240, "https://github.com/dotnet/roslyn/issues/4240")]
+        [WorkItem(4421, "https://github.com/dotnet/roslyn/issues/4421")]
         [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
         public void VerifySpacingAfterMethodDeclarationName_NonDefault()
         {
             var changingOptions = new Dictionary<OptionKey, object>();
             changingOptions.Add(CSharpFormattingOptions.SpacingAfterMethodDeclarationName, true);
-            var code = @"class Program
+            var code = @"class Program<T>
 {
     public static Program operator +   (Program p1, Program p2) { return null; }
     public static implicit operator string     (Program p) { return null; }
     public static void M  () { }
+    public void F<T>   () { }
 }";
-            var expected = @"class Program
+            var expected = @"class Program<T>
 {
     public static Program operator + (Program p1, Program p2) { return null; }
     public static implicit operator string (Program p) { return null; }
     public static void M () { }
+    public void F<T> () { }
 }";
             AssertFormat(expected, code, changedOptionSet: changingOptions);
         }
@@ -6319,6 +6325,99 @@ class Program
     }
 }";
             AssertFormat(expected, code);
+        }
+
+        [WorkItem(3256, "https://github.com/dotnet/roslyn/issues/3256")]
+        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public void SwitchSectionHonorsNewLineForBracesinControlBlockOption_Default()
+        {
+            var code = @"class Program
+{
+    public void foo()
+    {
+        int f = 1;
+        switch (f) {
+            case 1: {
+                    // DO nothing
+                    break;
+                }
+        }
+    }
+}";
+            var expected = @"class Program
+{
+    public void foo()
+    {
+        int f = 1;
+        switch (f)
+        {
+            case 1:
+                {
+                    // DO nothing
+                    break;
+                }
+        }
+    }
+}";
+            AssertFormat(expected, code);
+        }
+
+        [WorkItem(3256, "https://github.com/dotnet/roslyn/issues/3256")]
+        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public void SwitchSectionHonorsNewLineForBracesinControlBlockOption_NonDefault()
+        {
+            var changingOptions = new Dictionary<OptionKey, object>();
+            changingOptions.Add(CSharpFormattingOptions.NewLinesForBracesInControlBlocks, false);
+            var code = @"class Program
+{
+    public void foo()
+    {
+        int f = 1;
+        switch (f)
+        {
+            case 1:
+                {
+                    // DO nothing
+                    break;
+                }
+        }
+    }
+}";
+
+            var expected = @"class Program
+{
+    public void foo()
+    {
+        int f = 1;
+        switch (f) {
+            case 1: {
+                    // DO nothing
+                    break;
+                }
+        }
+    }
+}";
+            AssertFormat(expected, code, changedOptionSet: changingOptions);
+        }
+        
+        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public void FormattingCodeWithMissingTokensShouldRespectFormatTabsOption1()
+        {
+            var optionSet = new Dictionary<OptionKey, object> { { new OptionKey(FormattingOptions.UseTabs, LanguageNames.CSharp), true } };
+
+            AssertFormat(@"class Program
+{
+	static void Main()
+	{
+		return // Note the missing semicolon
+	} // The tab here should stay a tab
+}", @"class Program
+{
+	static void Main()
+	{
+		return // Note the missing semicolon
+	} // The tab here should stay a tab
+}", changedOptionSet: optionSet);
         }
     }
 }
