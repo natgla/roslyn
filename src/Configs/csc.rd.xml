@@ -22,14 +22,21 @@
     <Type Name="System.Security.Cryptography.MD5" Dynamic="Required All" />
     <Type Name="System.IO.File" Dynamic="Required All" />
     <Type Name="System.IO.Path" Dynamic="Required All" />
+    <Type Name="System.IO.Directory" Dynamic="Required All" />
+    <Type Name="System.IO.FileMode" Dynamic="Required All" />
+    <Type Name="System.IO.FileAccess" Dynamic="Required All" />
+    <Type Name="System.IO.FileShare" Dynamic="Required All" />
+    <Type Name="System.IO.FileOptions" Dynamic="Required All" />
     <Type Name="System.IO.FileStream" Dynamic="Required All" />
+    <Type Name="System.IO.SearchOption" Dynamic="Required All" />
+    <Type Name="System.Runtime.CompilerServices.RuntimeHelpers" Dynamic="Required All" />
+    <Type Name="System.Environment" Dynamic="Required All" />
     <Type Name="System.Diagnostics.FileVersionInfo" Dynamic="Required All" />
-    <Type Name="System.IO.FileSystem" Dynamic="Required All" />
-    <Type Name="System.IO.FileSystem.Primitives" Dynamic="Required All" />
-    <Type Name="System.Reflection" Dynamic="Required All" />
-    <Type Name="System.Runtime" Dynamic="Required All" />
-    <Type Name="System.Runtime.Extensions" Dynamic="Required All" />
-    <Type Name="System.Xml.XPath.XDocument" Dynamic="Required All" />
+    <Type Name="System.Threading.Thread" Dynamic="Required All" />
+    <Type Name="System.Text.Encoding" Dynamic="Required All" />
+    <Type Name="System.IO.MemoryStream" Dynamic="Required All" />
+    <Type Name="System.Xml.XPath.Extensions" Dynamic="Required All" />
+    <Type Name="System.Reflection.Assembly" Dynamic="Required All" />
 
     <Type Name="Microsoft.Cci.PdbMetadataWrapper" Dynamic="Required All" MarshalObject="Required All" />
     <Type Name="Microsoft.Cci.ISymUnmanagedWriter2Helper" Dynamic="Required All" MarshalObject="Required All" />
