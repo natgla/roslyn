@@ -21,6 +21,7 @@
     <AutoGenerateBindingRedirects>True</AutoGenerateBindingRedirects>
     <TargetCoreClr>true</TargetCoreClr>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <BuildingWithProjectN Condition="'$(BuildingWithProjectN)' != 'true'">false</BuildingWithProjectN>
   </PropertyGroup>
   <ItemGroup Label="Project References">
     <ProjectReference Include="..\..\Core\Portable\CodeAnalysis.csproj">
@@ -42,10 +43,14 @@
     <Reference Include="System.Collections.Immutable">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\packages\System.Collections.Immutable.$(SystemCollectionsImmutableVersion)\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+
+      <!-- Ensure assembly is avaliable for ProjectN compilation, even if in the GAC -->
+      <Private Condition="'$(BuildingWithProjectN)' == 'true'">True</Private>
     </Reference>
     <Reference Include="System.Reflection.Metadata">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\packages\System.Reflection.Metadata.$(SystemReflectionMetadataVersion)\lib\portable-net45+win8\System.Reflection.Metadata.dll</HintPath>
+      <Private Condition="'$(BuildingWithProjectN)' == 'true'">True</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -81,7 +86,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="project.json" />
-    <None Condition="'$(BuildingWithProjectN)' != ''" Include="..\..\..\Configs\csc.rd.xml">
+    <None Condition="'$(BuildingWithProjectN)' == 'true'" Include="..\..\..\Configs\csc.rd.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
@@ -89,6 +94,6 @@
     <Import Project="..\..\..\..\build\Targets\VSL.Imports.targets" />
   </ImportGroup>
   <Target Name="CopyExtraFiles" AfterTargets="Build">
-    <Copy SourceFiles="@(None)" DestinationFolder="$(OutDir)" Condition="'%(Extension)' == '.dll' AND '$(BuildingWithProjectN)' == ''" />
+    <Copy SourceFiles="@(None)" DestinationFolder="$(OutDir)" Condition="'%(Extension)' == '.dll' AND '$(BuildingWithProjectN)' == 'false'" />
   </Target> 
 </Project>
