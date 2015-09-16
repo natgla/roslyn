@@ -247,13 +247,13 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <param name="consoleOutput"></param>
         public override void PrintLogo(TextWriter consoleOutput)
         {
-#if (!ON_PROJECTN)
+#if (ON_PROJECTN)
+            // ProjectN: don't print logo: no resources and no way to know version:
+            consoleOutput.WriteLine("LOGO here");
+#else
             consoleOutput.WriteLine(ErrorFacts.GetMessage(MessageID.IDS_LogoLine1, Culture), GetToolName(), GetAssemblyFileVersion());
             consoleOutput.WriteLine(ErrorFacts.GetMessage(MessageID.IDS_LogoLine2, Culture));
             consoleOutput.WriteLine();
-#else
-            // ProjectN: don't print logo: no resources and no way to know version:
-            consoleOutput.WriteLine("LOGO here");
 #endif
         }
 

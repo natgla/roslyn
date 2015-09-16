@@ -56,7 +56,8 @@ namespace Roslyn.Utilities
             Touch(Path.Type);
             Touch(RuntimeHelpers.Type);
             Touch(SearchOption.Type);
-#if (!ON_PROJECTN)
+#if (ON_PROJECTN)
+#else
             Touch(Thread.Type);
 #endif
             Touch(XPath.Extensions.Type);
@@ -81,13 +82,10 @@ namespace Roslyn.Utilities
             internal const string System_Reflection = "System.Reflection, Version=4.0.10.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
             internal const string System_Runtime = "System.Runtime, Version=4.0.20.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
             internal const string System_Runtime_Extensions = "System.Runtime.Extensions, Version=4.0.10.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
-#if (!ON_PROJECTN)
+
             internal const string System_Security_Cryptography_Primitives = "System.Security.Cryptography.Primitives, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
             internal const string System_Security_Cryptography_Algorithms = "System.Security.Cryptography.Algorithms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
-#else
-            internal const string System_Security_Cryptography_Primitives = "System.Security.Cryptography.Hashing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
-            internal const string System_Security_Cryptography_Algorithms = "System.Security.Cryptography.Hashing.Algorithms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
-#endif
+
             internal const string System_Threading_Thread = "System.Threading.Thread, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
             internal const string System_Xml_XPath_XDocument = "System.Xml.XPath.XDocument, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a";
         }
@@ -389,7 +387,8 @@ namespace Roslyn.Utilities
                 .GetDeclaredProperty(nameof(FileVersion));
         }
 
-#if (!ON_PROJECTN)
+#if (ON_PROJECTN)
+#else
         internal static class Thread
         {
             internal const string TypeName = "System.Threading.Thread";
@@ -477,7 +476,8 @@ namespace Roslyn.Utilities
             internal static void SetCurrentUICulture(CultureInfo cultureInfo)
             {
                 // TODO: CoreClr needs to go through CultureInfo.CurrentUICulture
-#if (!ON_PROJECTN)
+#if (ON_PROJECTN)
+#else
                 var thread = Thread.CurrentThread.GetValue(null);
                 Thread.CurrentUICulture.SetValue(thread, cultureInfo);
 #endif

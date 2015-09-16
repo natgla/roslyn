@@ -747,15 +747,7 @@ namespace Microsoft.Cci
 
         private static bool s_MicrosoftDiaSymReaderNativeLoadFailed;
 
-#if (!ON_PROJECTN)
-        [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
-        [DllImport("Microsoft.DiaSymReader.Native.x86.dll", EntryPoint = "CreateSymWriter")]
-        private extern static void CreateSymWriter32(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)]out object symWriter);
-
-        [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
-        [DllImport("Microsoft.DiaSymReader.Native.amd64.dll", EntryPoint = "CreateSymWriter")]
-        private extern static void CreateSymWriter64(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)]out object symWriter);
-#else
+#if (ON_PROJECTN)
 #if (ON_PROJECTN32)
         [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
         [DllImport("Microsoft.DiaSymReader.Native.x86.dll", EntryPoint = "CreateSymWriter")]
@@ -765,6 +757,15 @@ namespace Microsoft.Cci
         [DllImport("Microsoft.DiaSymReader.Native.amd64.dll", EntryPoint = "CreateSymWriter")]
         private extern static void CreateSymWriter64(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)]out object symWriter);
 #endif
+#else
+        [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
+        [DllImport("Microsoft.DiaSymReader.Native.x86.dll", EntryPoint = "CreateSymWriter")]
+        private extern static void CreateSymWriter32(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)]out object symWriter);
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
+        [DllImport("Microsoft.DiaSymReader.Native.amd64.dll", EntryPoint = "CreateSymWriter")]
+        private extern static void CreateSymWriter64(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)]out object symWriter);
+
 #endif
 
         private static Type GetCorSymWriterSxSType()
@@ -788,7 +789,13 @@ namespace Microsoft.Cci
                 try
                 {
                     var guid = new Guid(SymWriterClsid);
-#if (!ON_PROJECTN)
+#if (ON_PROJECTN)
+    #if (ON_PROJECTN32)
+                    CreateSymWriter32(ref guid, out symWriter);
+    #else
+                    CreateSymWriter64(ref guid, out symWriter);
+    #endif
+#else
                     if (IntPtr.Size == 4)
                     {
                         CreateSymWriter32(ref guid, out symWriter);
@@ -797,12 +804,6 @@ namespace Microsoft.Cci
                     {
                         CreateSymWriter64(ref guid, out symWriter);
                     }
-#else
-#if (ON_PROJECTN32)
-                        CreateSymWriter32(ref guid, out symWriter);
-#else
-                        CreateSymWriter64(ref guid, out symWriter);
-#endif
 #endif
                 }
                 catch (Exception)
@@ -814,7 +815,8 @@ namespace Microsoft.Cci
 
             if (symWriter == null)
             {
-#if (!ON_PROJECTN)
+#if (ON_PROJECTN)
+#else
                 // Try to find a registered CLR implementation
                 symWriter = Activator.CreateInstance(GetCorSymWriterSxSType());
 #endif
@@ -1236,11 +1238,11 @@ namespace Microsoft.Cci
                     // compiler actually created a variant with type VT_DATE and value equal to the tick count.
                     // http://blogs.msdn.com/b/ericlippert/archive/2003/09/16/eric-s-complete-guide-to-vt-date.aspx
                     var dt = (DateTime)value;
-#if (!ON_PROJECTN)
-                    _symWriter.DefineConstant2(name, new VariantStructure(dt), constantSignatureToken);
-#else
-					// VariantStructure doesn't work on ProjectN
+#if (ON_PROJECTN)
+                    // VariantStructure doesn't work on ProjectN
                     _symWriter.DefineConstant2(name, dt, constantSignatureToken);
+#else
+                    _symWriter.DefineConstant2(name, new VariantStructure(dt), constantSignatureToken);
 #endif
                     if (_callLogger.LogOperation(OP.DefineConstant2))
                     {
@@ -1258,9 +1260,7 @@ namespace Microsoft.Cci
             {
                 try
                 {
-#if (!ON_PROJECTN)
-                    _symWriter.DefineConstant2(name, value, constantSignatureToken);
-#else
+#if (ON_PROJECTN)
                     // workaround for ProjectN Variant ctor handling chars as unknown:
                     if (value is char)
                     {
@@ -1271,6 +1271,8 @@ namespace Microsoft.Cci
                     {
                         _symWriter.DefineConstant2(name, value, constantSignatureToken);
                     }
+#else
+                    _symWriter.DefineConstant2(name, value, constantSignatureToken);
 #endif
                     if (_callLogger.LogOperation(OP.DefineConstant2))
                     {

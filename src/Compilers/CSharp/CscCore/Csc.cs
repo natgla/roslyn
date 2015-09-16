@@ -21,12 +21,8 @@ namespace Microsoft.CodeAnalysis.CSharp.CommandLine
         {
             FatalError.Handler = FailFast.OnFatalException;
 
-#if (!ON_PROJECTN)
             var responseFile = Path.Combine(clientDirectory, CSharpCompiler.ResponseFileName);
-#else
-            // No way to find out real clientDirectory, so getting response file from framework install.
-            var responseFile = Path.Combine(sdkDirectory, CSharpCompiler.ResponseFileName); 
-#endif
+
             Csc compiler = new Csc(responseFile, clientDirectory, Directory.GetCurrentDirectory(), sdkDirectory, args, analyzerLoader);
 
             return ConsoleUtil.RunWithOutput(compiler.Arguments.Utf8Output, (textWriterOut, _) => compiler.Run(textWriterOut));

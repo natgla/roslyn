@@ -49,7 +49,10 @@ namespace Microsoft.Cci
         void DefineLocalVariable2(string name, uint attributes, uint sigToken, uint addrKind, uint addr1, uint addr2, uint addr3, uint startOffset, uint endOffset);
         void DefineGlobalVariable2(string name, uint attributes, uint sigToken, uint addrKind, uint addr1, uint addr2, uint addr3);
 
-#if (!ON_PROJECTN)
+#if (ON_PROJECTN)
+        // Unfortunately, VariantStructure doesn't work for ProjectN.
+        void DefineConstant2([MarshalAs(UnmanagedType.LPWStr)] string name, object value, uint sigToken);
+#else
         /// <remarks>
         /// <paramref name="value"/> has type <see cref="VariantStructure"/>, rather than <see cref="object"/>,
         /// so that we can do custom marshalling of <see cref="System.DateTime"/>.  Unfortunately, .NET marshals
@@ -57,10 +60,7 @@ namespace Microsoft.Cci
         ///  marshalled them as the number of ticks since the Unix epoch (i.e. a much, much larger number).
         /// </remarks>
         void DefineConstant2([MarshalAs(UnmanagedType.LPWStr)] string name, VariantStructure value, uint sigToken);
-#else
-        // Unfortunately, VariantStructure doesn't work for ProjectN.
-        void DefineConstant2([MarshalAs(UnmanagedType.LPWStr)] string name, object value, uint sigToken);
-#endif	
+#endif
     }
 
     [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("98ECEE1E-752D-11d3-8D56-00C04F680B2B"), SuppressUnmanagedCodeSecurity]
@@ -76,7 +76,8 @@ namespace Microsoft.Cci
 
     internal static class ISymUnmanagedWriter2Helper
     {
-#if (!ON_PROJECTN)
+#if (ON_PROJECTN)
+#else
         public static unsafe void DefineConstant2(this ISymUnmanagedWriter2 writer, string name, object value, uint sigToken)
         {
             VariantStructure variant = new VariantStructure();

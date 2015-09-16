@@ -13,21 +13,22 @@ namespace Microsoft.CodeAnalysis.CSharp.CommandLine
         public static int Main(string[] args)
             => BuildClient.RunWithConsoleOutput(
                 args,
-#if (!ON_PROJECTN)
-                clientDir: AppDomain.CurrentDomain.BaseDirectory,
+
+#if (ON_PROJECTN)
+            //Can't determine the client directory in ProjectN, so default to the sdkDir
+            #if (ON_PROJECTN32)
+                clientDir: @"C:\Windows\Microsoft.NET\Framework\v4.0.30319",
+                sdkDir: @"C:\Windows\Microsoft.NET\Framework\v4.0.30319",
+            #else
+                clientDir: @"C:\Windows\Microsoft.NET\Framework64\v4.0.30319",
+                sdkDir: @"C:\Windows\Microsoft.NET\Framework64\v4.0.30319",
+            #endif
 #else
-                clientDir: null,
+                sdkDir: RuntimeEnvironment.GetRuntimeDirectory(),
+                clientDir: AppDomain.CurrentDomain.BaseDirectory,
 #endif
                 workingDir: Directory.GetCurrentDirectory(),
-#if (!ON_PROJECTN)
-                sdkDir: RuntimeEnvironment.GetRuntimeDirectory(),
-#else
-#if (ON_PROJECTN32)
-                sdkDir: @"C:\Windows\Microsoft.NET\Framework\v4.0.30319",
-#else
-                sdkDir: @"C:\Windows\Microsoft.NET\Framework64\v4.0.30319",
-#endif
-#endif
+
                 analyzerLoader: new SimpleAnalyzerAssemblyLoader(),
                 language: RequestLanguage.CSharpCompile,
                 fallbackCompiler: Csc.Run);

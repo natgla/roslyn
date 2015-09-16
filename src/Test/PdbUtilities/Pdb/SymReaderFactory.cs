@@ -12,15 +12,7 @@ namespace Roslyn.Test.PdbUtilities
 {
     public static class SymReaderFactory
     {
-#if (!ON_PROJECTN)
-        [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
-        [DllImport("Microsoft.DiaSymReader.Native.x86.dll", EntryPoint = "CreateSymReader")]
-        private extern static void CreateSymReader32(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)]out object symReader);
-
-        [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
-        [DllImport("Microsoft.DiaSymReader.Native.amd64.dll", EntryPoint = "CreateSymReader")]
-        private extern static void CreateSymReader64(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)]out object symReader);
-#else
+#if (ON_PROJECTN)
 #if (ON_PROJECTN32)
         [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
         [DllImport("Microsoft.DiaSymReader.Native.x86.dll", EntryPoint = "CreateSymReader")]
@@ -30,6 +22,14 @@ namespace Roslyn.Test.PdbUtilities
         [DllImport("Microsoft.DiaSymReader.Native.amd64.dll", EntryPoint = "CreateSymReader")]
         private extern static void CreateSymReader64(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)]out object symReader);
 #endif
+#else
+        [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
+        [DllImport("Microsoft.DiaSymReader.Native.x86.dll", EntryPoint = "CreateSymReader")]
+        private extern static void CreateSymReader32(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)]out object symReader);
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory)]
+        [DllImport("Microsoft.DiaSymReader.Native.amd64.dll", EntryPoint = "CreateSymReader")]
+        private extern static void CreateSymReader64(ref Guid id, [MarshalAs(UnmanagedType.IUnknown)]out object symReader);
 #endif
 
         private static ISymUnmanagedReader3 CreateNativeSymReader(Stream pdbStream, object metadataImporter)
@@ -37,7 +37,13 @@ namespace Roslyn.Test.PdbUtilities
             object symReader = null;
 
             var guid = default(Guid);
-#if (!ON_PROJECTN)
+#if (ON_PROJECTN)
+#if (ON_PROJECTN32)
+            CreateSymReader32(ref guid, out symReader);
+#else
+            CreateSymReader64(ref guid, out symReader);
+#endif
+#else
             if (IntPtr.Size == 4)
             {
                 CreateSymReader32(ref guid, out symReader);
@@ -46,12 +52,6 @@ namespace Roslyn.Test.PdbUtilities
             {
                 CreateSymReader64(ref guid, out symReader);
             }
-#else
-#if (ON_PROJECTN32)
-                CreateSymReader32(ref guid, out symReader);
-#else
-                CreateSymReader64(ref guid, out symReader);
-#endif
 #endif
 
             var reader = (ISymUnmanagedReader3)symReader;
