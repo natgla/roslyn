@@ -25,6 +25,18 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
+    <Reference Include="System.Collections.Immutable">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(NuGetPackageRoot)\System.Collections.Immutable\$(SystemCollectionsImmutableVersion)\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+
+      <!-- Ensure assembly is avaliable for ProjectN compilation, even if in the GAC -->
+      <Private Condition="'$(BuildingWithProjectN)' == 'true'">True</Private>
+    </Reference>
+    <Reference Include="System.Reflection.Metadata">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(NuGetPackageRoot)\System.Reflection.Metadata\$(SystemReflectionMetadataVersion)\lib\portable-net45+win8\System.Reflection.Metadata.dll</HintPath>
+      <Private Condition="'$(BuildingWithProjectN)' == 'true'">True</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AbstractFileWriter.cs" />

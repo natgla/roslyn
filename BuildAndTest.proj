@@ -17,8 +17,8 @@
   </PropertyGroup>
 
   <Target Name="RestorePackages">
-    <Exec Command="nuget.exe restore &quot;$(MSBuildThisFileDirectory)build\ToolsetPackages\project.json&quot; "/>
-    <Exec Command="nuget.exe restore &quot;$(MSBuildThisFileDirectory)Roslyn.sln&quot; "/>
+    <Exec Command="nuget.exe restore &quot;$(MSBuildThisFileDirectory)build\ToolsetPackages\project.json&quot; -PackagesDirectory &quot;$(NuGetPackageRoot)&quot;"/>
+    <Exec Command="nuget.exe restore &quot;$(MSBuildThisFileDirectory)Roslyn.sln&quot; -PackagesDirectory &quot;$(NuGetPackageRoot)&quot;"/>
   </Target>
 
   <Target Name="Build" DependsOnTargets="RestorePackages">

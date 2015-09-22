@@ -32,7 +32,7 @@
     <Message Importance="High" Text="Restoring toolset packages..." />
 
     <!-- Run restore -->
-    <Exec Command="$(NuGetToolPath) restore $(ToolsetPackagesDir)project.json" />
+    <Exec Command="$(NuGetToolPath) restore $(ToolsetPackagesDir)project.json -PackagesDirectory $(NuGetPackageRoot)" />
 
     <Error Text="Toolset compilers were not restored correctly. Could not find: $(ToolsetCompilerPropsFilePath)"
            Condition="!Exists('$(ToolsetCompilerPropsFilePath)')" />
@@ -277,11 +277,11 @@
   </Choose>
 
   <!-- We build on ProjectN only C# code currently: -->
-  <PropertyGroup Condition="'$(BuildingWithProjectN)' != '' AND '$(ProjectLanguage)' == 'CSharp'">
+  <PropertyGroup Condition="'$(BuildingWithProjectN)' == 'true' AND '$(ProjectLanguage)' == 'CSharp'">
     <DefineConstants>$(DefineConstants);ON_PROJECTN</DefineConstants>
   </PropertyGroup>
   <!-- Prepare code for x86 compilation: -->
-  <PropertyGroup Condition="'$(BuildingWithProjectN32)' != '' AND '$(ProjectLanguage)' == 'CSharp'">
+  <PropertyGroup Condition="'$(BuildingWithProjectN32)' == 'true' AND '$(ProjectLanguage)' == 'CSharp'">
     <DefineConstants>$(DefineConstants);ON_PROJECTN;ON_PROJECTN32</DefineConstants>
   </PropertyGroup>
 
