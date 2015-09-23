@@ -1987,7 +1987,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
             Next
         End Function
 
-        Friend Function GetDiagnosticsForTree(stage As CompilationStage,
+        Friend Function GetDiagnosticsForSyntaxTree(stage As CompilationStage,
                                               tree As SyntaxTree,
                                               filterSpanWithinTree As TextSpan?,
                                               includeEarlierStages As Boolean,
@@ -2074,10 +2074,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
         ' Filter out some warnings based on the compiler options (/nowarn and /warnaserror).
         Friend Overloads Function FilterAndAppendDiagnostics(accumulator As DiagnosticBag, ByRef incoming As IEnumerable(Of Diagnostic)) As Boolean
             Dim hasError As Boolean = False
+            Dim reportSuppressedDiagnostics = Options.ReportSuppressedDiagnostics
 
             For Each diagnostic As Diagnostic In incoming
                 Dim filtered = Me._options.FilterDiagnostic(diagnostic)
-                If filtered Is Nothing Then
+                If filtered Is Nothing OrElse
+                    (Not reportSuppressedDiagnostics AndAlso filtered.IsSuppressed) Then
                     Continue For
                 End If
 

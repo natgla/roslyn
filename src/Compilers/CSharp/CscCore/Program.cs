@@ -12,16 +12,15 @@ namespace Microsoft.CodeAnalysis.CSharp.CommandLine
             => Csc.Run(args: args,
 #if (ON_PROJECTN)
 #if (ON_PROJECTN32)
-                       clientDirectory: @"C:\Windows\Microsoft.NET\Framework64\v4.0.30319",
-                       sdkDirectory: @"C:\Windows\Microsoft.NET\Framework\v4.0.30319",
+                       clientDirectory: @"C:\Windows\Microsoft.NET\Framework\v4.0.30319",
 #else
                        clientDirectory: @"C:\Windows\Microsoft.NET\Framework64\v4.0.30319",
-                       sdkDirectory: @"C:\Windows\Microsoft.NET\Framework64\v4.0.30319",
 #endif
 #else
                        clientDirectory: AppContext.BaseDirectory,
-                       sdkDirectory: @"C:\Windows\Microsoft.NET\Framework\v4.0.30319",
 #endif
+                       sdkDirectory: null,
+
                        analyzerLoader: new NoOpAnalyzerAssemblyLoader());
     }
 }

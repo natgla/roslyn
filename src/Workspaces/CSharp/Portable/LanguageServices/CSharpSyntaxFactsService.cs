@@ -555,20 +555,9 @@ namespace Microsoft.CodeAnalysis.CSharp
 
         public SyntaxNode GetExpressionOfMemberAccessExpression(SyntaxNode node)
         {
-            if (node.IsKind(SyntaxKind.MemberBindingExpression))
-            {
-                if (node.IsParentKind(SyntaxKind.ConditionalAccessExpression))
-                {
-                    return GetExpressionOfConditionalMemberAccessExpression(node.Parent);
-                }
-                if (node.IsParentKind(SyntaxKind.InvocationExpression) &&
-                    node.Parent.IsParentKind(SyntaxKind.ConditionalAccessExpression))
-                {
-                    return GetExpressionOfConditionalMemberAccessExpression(node.Parent.Parent);
-                }
-            }
-
-            return (node as MemberAccessExpressionSyntax)?.Expression;
+            return node.IsKind(SyntaxKind.MemberBindingExpression)
+                ? GetExpressionOfConditionalMemberAccessExpression(node.GetParentConditionalAccessExpression()) 
+                : (node as MemberAccessExpressionSyntax)?.Expression;
         }
 
         public SyntaxNode GetExpressionOfConditionalMemberAccessExpression(SyntaxNode node)
@@ -724,7 +713,8 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 if (useFullSpan || node.Span.Contains(position))
                 {
-                    if ((node.Kind() != SyntaxKind.GlobalStatement) && (node is MemberDeclarationSyntax))
+                    var kind = node.Kind();
+                    if ((kind != SyntaxKind.GlobalStatement) && (kind != SyntaxKind.IncompleteMember) && (node is MemberDeclarationSyntax))
                     {
                         return node;
                     }
@@ -1041,6 +1031,8 @@ namespace Microsoft.CodeAnalysis.CSharp
                 case SyntaxKind.IdentifierName:
                     var identifier = ((IdentifierNameSyntax)node).Identifier;
                     return identifier.IsMissing ? missingTokenPlaceholder : identifier.Text;
+                case SyntaxKind.IncompleteMember:
+                    return missingTokenPlaceholder;
                 case SyntaxKind.NamespaceDeclaration:
                     return GetName(((NamespaceDeclarationSyntax)node).Name, options);
                 case SyntaxKind.QualifiedName:

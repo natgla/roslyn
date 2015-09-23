@@ -119,7 +119,9 @@ namespace Microsoft.CodeAnalysis.Diagnostics
         {
             VerifyArguments(compilation, analyzers, analysisOptions);
 
-            _compilation = compilation.WithEventQueue(new AsyncQueue<CompilationEvent>());
+            _compilation = compilation
+                .WithOptions(compilation.Options.WithReportSuppressedDiagnostics(analysisOptions.ReportSuppressedDiagnostics))
+                .WithEventQueue(new AsyncQueue<CompilationEvent>());
             _analyzers = analyzers;
             _analysisOptions = analysisOptions;
             _cancellationToken = cancellationToken;
@@ -688,7 +690,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics
                     finally
                     {
                         // Update the diagnostic results based on the diagnostics reported on the driver.
-                        _analysisResult.StoreAnalysisResult(analysisScope, driver);
+                        _analysisResult.StoreAnalysisResult(analysisScope, driver, _compilation);
                     }
                 }
             }
@@ -963,14 +965,14 @@ namespace Microsoft.CodeAnalysis.Diagnostics
                 throw new ArgumentNullException(nameof(compilation));
             }
 
-            var suppressMessageState = AnalyzerDriver.GetCachedCompilationData(compilation).SuppressMessageAttributeState;
             foreach (var diagnostic in diagnostics.ToImmutableArray())
             {
                 if (diagnostic != null)
                 {
                     var effectiveDiagnostic = compilation.Options.FilterDiagnostic(diagnostic);
-                    if (effectiveDiagnostic != null && !suppressMessageState.IsDiagnosticSuppressed(effectiveDiagnostic))
+                    if (effectiveDiagnostic != null)
                     {
+                        effectiveDiagnostic = SuppressMessageAttributeState.ApplySourceSuppressions(effectiveDiagnostic, compilation);
                         yield return effectiveDiagnostic;
                     }
                 }

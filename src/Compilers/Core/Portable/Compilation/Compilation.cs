@@ -1480,7 +1480,7 @@ namespace Microsoft.CodeAnalysis
             CancellationToken cancellationToken)
         {
             return Emit(
-                peStream, 
+                peStream,
                 pdbStream,
                 xmlDocumentationStream,
                 win32Resources,

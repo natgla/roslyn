@@ -2054,11 +2054,13 @@ namespace Microsoft.CodeAnalysis.CSharp
         private bool FilterAndAppendDiagnostics(DiagnosticBag accumulator, IEnumerable<Diagnostic> incoming)
         {
             bool hasError = false;
+            bool reportSuppressedDiagnostics = Options.ReportSuppressedDiagnostics;
 
             foreach (Diagnostic d in incoming)
             {
                 var filtered = _options.FilterDiagnostic(d);
-                if (filtered == null)
+                if (filtered == null ||
+                    (!reportSuppressedDiagnostics && filtered.IsSuppressed))
                 {
                     continue;
                 }
@@ -2072,8 +2074,6 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             return !hasError;
         }
-
-
 
         private ImmutableArray<Diagnostic> GetSourceDeclarationDiagnostics(SyntaxTree syntaxTree = null, TextSpan? filterSpanWithinTree = null, Func<IEnumerable<Diagnostic>, SyntaxTree, TextSpan?, IEnumerable<Diagnostic>> locationFilterOpt = null, CancellationToken cancellationToken = default(CancellationToken))
         {
