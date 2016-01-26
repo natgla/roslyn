@@ -1,7 +1,9 @@
 ﻿// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Completion;
 using Microsoft.CodeAnalysis.CSharp.Completion.Providers;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces;
 using Roslyn.Test.Utilities;
 using Xunit;
 
@@ -9,13 +11,17 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.UnitTests.Completion.CompletionPr
 {
     public class SpeculativeTCompletionProviderTests : AbstractCSharpCompletionProviderTests
     {
+        public SpeculativeTCompletionProviderTests(CSharpTestWorkspaceFixture workspaceFixture) : base(workspaceFixture)
+        {
+        }
+
         internal override CompletionListProvider CreateCompletionProvider()
         {
             return new SpeculativeTCompletionProvider();
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void IsCommitCharacterTest()
+        public async Task IsCommitCharacterTest()
         {
             const string markup = @"
 class C
@@ -23,17 +29,17 @@ class C
     $$
 }";
 
-            VerifyCommonCommitCharacters(markup, textTypedSoFar: "");
+            await VerifyCommonCommitCharactersAsync(markup, textTypedSoFar: "");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void IsTextualTriggerCharacterTest()
+        public async Task IsTextualTriggerCharacterTest()
         {
-            TestCommonIsTextualTriggerCharacter();
+            await TestCommonIsTextualTriggerCharacterAsync();
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void SendEnterThroughToEditorTest()
+        public async Task SendEnterThroughToEditorTest()
         {
             const string markup = @"
 class C
@@ -41,12 +47,12 @@ class C
     $$
 }";
 
-            VerifySendEnterThroughToEnter(markup, "T", sendThroughEnterEnabled: false, expected: false);
-            VerifySendEnterThroughToEnter(markup, "T", sendThroughEnterEnabled: true, expected: true);
+            await VerifySendEnterThroughToEnterAsync(markup, "T", sendThroughEnterEnabled: false, expected: false);
+            await VerifySendEnterThroughToEnterAsync(markup, "T", sendThroughEnterEnabled: true, expected: true);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void InClass()
+        public async Task InClass()
         {
             var markup = @"
 class C
@@ -54,11 +60,11 @@ class C
     $$
 }";
 
-            VerifyItemExists(markup, "T");
+            await VerifyItemExistsAsync(markup, "T");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void InInterface()
+        public async Task InInterface()
         {
             var markup = @"
 interface I
@@ -66,11 +72,11 @@ interface I
     $$
 }";
 
-            VerifyItemExists(markup, "T");
+            await VerifyItemExistsAsync(markup, "T");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void InStruct()
+        public async Task InStruct()
         {
             var markup = @"
 struct S
@@ -78,11 +84,11 @@ struct S
     $$
 }";
 
-            VerifyItemExists(markup, "T");
+            await VerifyItemExistsAsync(markup, "T");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void NotInNamespace()
+        public async Task NotInNamespace()
         {
             var markup = @"
 namespace N
@@ -90,11 +96,11 @@ namespace N
     $$
 }";
 
-            VerifyItemIsAbsent(markup, "T");
+            await VerifyItemIsAbsentAsync(markup, "T");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void NotInEnum()
+        public async Task NotInEnum()
         {
             var markup = @"
 enum E
@@ -102,11 +108,11 @@ enum E
     $$
 }";
 
-            VerifyItemIsAbsent(markup, "T");
+            await VerifyItemIsAbsentAsync(markup, "T");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void AfterDelegate()
+        public async Task AfterDelegate()
         {
             var markup = @"
 class C
@@ -114,11 +120,11 @@ class C
     delegate $$
 }";
 
-            VerifyItemExists(markup, "T");
+            await VerifyItemExistsAsync(markup, "T");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void NotAfterVoid()
+        public async Task NotAfterVoid()
         {
             var markup = @"
 class C
@@ -126,11 +132,11 @@ class C
     void $$
 }";
 
-            VerifyItemIsAbsent(markup, "T");
+            await VerifyItemIsAbsentAsync(markup, "T");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void NotAfterInt()
+        public async Task NotAfterInt()
         {
             var markup = @"
 class C
@@ -138,11 +144,11 @@ class C
     int $$
 }";
 
-            VerifyItemIsAbsent(markup, "T");
+            await VerifyItemIsAbsentAsync(markup, "T");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void InGeneric()
+        public async Task InGeneric()
         {
             var markup = @"
 using System;
@@ -151,11 +157,11 @@ class C
     Func<$$
 }";
 
-            VerifyItemExists(markup, "T");
+            await VerifyItemExistsAsync(markup, "T");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void InNestedGeneric1()
+        public async Task InNestedGeneric1()
         {
             var markup = @"
 using System;
@@ -164,11 +170,11 @@ class C
     Func<Func<$$
 }";
 
-            VerifyItemExists(markup, "T");
+            await VerifyItemExistsAsync(markup, "T");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void InNestedGeneric2()
+        public async Task InNestedGeneric2()
         {
             var markup = @"
 using System;
@@ -177,68 +183,68 @@ class C
     Func<Func<int,$$
 }";
 
-            VerifyItemExists(markup, "T");
+            await VerifyItemExistsAsync(markup, "T");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void InScript()
+        public async Task InScript()
         {
             var markup = @"$$";
 
-            VerifyItemExists(markup, "T", expectedDescriptionOrNull: null, sourceCodeKind: SourceCodeKind.Script);
+            await VerifyItemExistsAsync(markup, "T", expectedDescriptionOrNull: null, sourceCodeKind: SourceCodeKind.Script);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void NotAfterVoidInScript()
+        public async Task NotAfterVoidInScript()
         {
             var markup = @"void $$";
 
-            VerifyItemIsAbsent(markup, "T", expectedDescriptionOrNull: null, sourceCodeKind: SourceCodeKind.Script);
+            await VerifyItemIsAbsentAsync(markup, "T", expectedDescriptionOrNull: null, sourceCodeKind: SourceCodeKind.Script);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void NotAfterIntInScript()
+        public async Task NotAfterIntInScript()
         {
             var markup = @"int $$";
 
-            VerifyItemIsAbsent(markup, "T", expectedDescriptionOrNull: null, sourceCodeKind: SourceCodeKind.Script);
+            await VerifyItemIsAbsentAsync(markup, "T", expectedDescriptionOrNull: null, sourceCodeKind: SourceCodeKind.Script);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void InGenericInScript()
+        public async Task InGenericInScript()
         {
             var markup = @"
 using System;
 Func<$$
 ";
 
-            VerifyItemExists(markup, "T", expectedDescriptionOrNull: null, sourceCodeKind: SourceCodeKind.Script);
+            await VerifyItemExistsAsync(markup, "T", expectedDescriptionOrNull: null, sourceCodeKind: SourceCodeKind.Script);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void InNestedGenericInScript1()
+        public async Task InNestedGenericInScript1()
         {
             var markup = @"
 using System;
 Func<Func<$$
 ";
 
-            VerifyItemExists(markup, "T", expectedDescriptionOrNull: null, sourceCodeKind: SourceCodeKind.Script);
+            await VerifyItemExistsAsync(markup, "T", expectedDescriptionOrNull: null, sourceCodeKind: SourceCodeKind.Script);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void InNestedGenericInScript2()
+        public async Task InNestedGenericInScript2()
         {
             var markup = @"
 using System;
 Func<Func<int,$$
 ";
 
-            VerifyItemExists(markup, "T", expectedDescriptionOrNull: null, sourceCodeKind: SourceCodeKind.Script);
+            await VerifyItemExistsAsync(markup, "T", expectedDescriptionOrNull: null, sourceCodeKind: SourceCodeKind.Script);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void NotInComment()
+        public async Task NotInComment()
         {
             var markup = @"
 class C
@@ -246,11 +252,11 @@ class C
     // $$
 }";
 
-            VerifyItemIsAbsent(markup, "T");
+            await VerifyItemIsAbsentAsync(markup, "T");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void NotInXmlDocComment()
+        public async Task NotInXmlDocComment()
         {
             var markup = @"
 class C
@@ -261,11 +267,11 @@ class C
     void Foo() { }
 }";
 
-            VerifyItemIsAbsent(markup, "T");
+            await VerifyItemIsAbsentAsync(markup, "T");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void AfterAsyncTask()
+        public async Task AfterAsyncTask()
         {
             var markup = @"
 using System.Threading.Tasks;
@@ -274,11 +280,11 @@ class Program
     async Task<$$
 }";
 
-            VerifyItemExists(markup, "T");
+            await VerifyItemExistsAsync(markup, "T");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void NotAfterAsync()
+        public async Task NotAfterAsync()
         {
             var markup = @"
 using System.Threading.Tasks;
@@ -287,12 +293,12 @@ class Program
     async $$
 }";
 
-            VerifyItemIsAbsent(markup, "T");
+            await VerifyItemIsAbsentAsync(markup, "T");
         }
 
         [WorkItem(968256)]
         [Fact, Trait(Traits.Feature, Traits.Features.KeywordRecommending)]
-        public void UnionOfItemsFromBothContexts()
+        public async Task UnionOfItemsFromBothContexts()
         {
             var markup = @"<Workspace>
     <Project Language=""C#"" CommonReferences=""true"" AssemblyName=""Proj1"" PreprocessorSymbols=""FOO"">
@@ -316,12 +322,12 @@ $$
         <Document IsLinkFile=""true"" LinkAssemblyName=""Proj1"" LinkFilePath=""CurrentDocument.cs""/>
     </Project>
 </Workspace>";
-            VerifyItemInLinkedFiles(markup, "T", null);
+            await VerifyItemInLinkedFilesAsync(markup, "T", null);
         }
 
         [WorkItem(1020654)]
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void AfterAsyncTaskWithBraceCompletion()
+        public async Task AfterAsyncTaskWithBraceCompletion()
         {
             var markup = @"
 using System.Threading.Tasks;
@@ -330,7 +336,7 @@ class Program
     async Task<$$>
 }";
 
-            VerifyItemExists(markup, "T");
+            await VerifyItemExistsAsync(markup, "T");
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Composition;
 using System.Threading;
 using Microsoft.CodeAnalysis.CodeFixes;
+using Microsoft.CodeAnalysis.Editor.Host;
 using Microsoft.CodeAnalysis.Host;
 using Microsoft.CodeAnalysis.Host.Mef;
 
@@ -16,12 +17,15 @@ namespace Microsoft.CodeAnalysis.Editor.Implementation.Suggestions
     internal class FixMultipleOccurrencesService : IFixMultipleOccurrencesService, IWorkspaceServiceFactory
     {
         private readonly ICodeActionEditHandlerService _editHandler;
+        private readonly IWaitIndicator _waitIndicator;
 
         [ImportingConstructor]
         public FixMultipleOccurrencesService(
-            ICodeActionEditHandlerService editHandler)
+            ICodeActionEditHandlerService editHandler,
+            IWaitIndicator waitIndicator)
         {
             _editHandler = editHandler;
+            _waitIndicator = waitIndicator;
         }
 
         public IWorkspaceService CreateService(HostWorkspaceServices workspaceServices)
@@ -29,48 +33,47 @@ namespace Microsoft.CodeAnalysis.Editor.Implementation.Suggestions
             return this;
         }
 
-        public void ComputeAndApplyFix(
+        public Solution GetFix(
             ImmutableDictionary<Document, ImmutableArray<Diagnostic>> diagnosticsToFix,
             Workspace workspace,
             CodeFixProvider fixProvider,
             FixAllProvider fixAllProvider,
             string equivalenceKey,
-            string waitDialogAndPreviewChangesTitle,
+            string waitDialogTitle,
             string waitDialogMessage,
-            bool showPreviewChangesDialog,
             CancellationToken cancellationToken)
         {
             var fixMultipleContext = FixMultipleContext.Create(diagnosticsToFix, fixProvider, equivalenceKey, cancellationToken);
-            ComputeAndApplyFix(fixMultipleContext, workspace, fixAllProvider, waitDialogAndPreviewChangesTitle, waitDialogMessage, showPreviewChangesDialog, cancellationToken);
+            var suggestedAction = GetSuggestedAction(fixMultipleContext, workspace, fixAllProvider, waitDialogTitle, waitDialogMessage, showPreviewChangesDialog: false, cancellationToken: cancellationToken);
+            return suggestedAction.GetChangedSolution(cancellationToken);
         }
 
-        public void ComputeAndApplyFix(
+        public Solution GetFix(
             ImmutableDictionary<Project, ImmutableArray<Diagnostic>> diagnosticsToFix,
             Workspace workspace,
             CodeFixProvider fixProvider,
             FixAllProvider fixAllProvider,
             string equivalenceKey,
-            string waitDialogAndPreviewChangesTitle,
+            string waitDialogTitle,
             string waitDialogMessage,
-            bool showPreviewChangesDialog,
             CancellationToken cancellationToken)
         {
             var fixMultipleContext = FixMultipleContext.Create(diagnosticsToFix, fixProvider, equivalenceKey, cancellationToken);
-            ComputeAndApplyFix(fixMultipleContext, workspace, fixAllProvider, waitDialogAndPreviewChangesTitle, waitDialogMessage, showPreviewChangesDialog, cancellationToken);
+            var suggestedAction = GetSuggestedAction(fixMultipleContext, workspace, fixAllProvider, waitDialogTitle, waitDialogMessage, showPreviewChangesDialog: false, cancellationToken: cancellationToken);
+            return suggestedAction.GetChangedSolution(cancellationToken);
         }
 
-        private void ComputeAndApplyFix(
+        private FixMultipleSuggestedAction GetSuggestedAction(
             FixMultipleContext fixMultipleContext,
             Workspace workspace,
             FixAllProvider fixAllProvider,
-            string waitDialogAndPreviewChangesTitle,
+            string title,
             string waitDialogMessage,
             bool showPreviewChangesDialog,
             CancellationToken cancellationToken)
         {
-            var fixMultipleCodeAction = new FixMultipleCodeAction(fixMultipleContext, fixAllProvider, title: waitDialogAndPreviewChangesTitle, previewChangesDialogTitle: waitDialogAndPreviewChangesTitle, computingFixWaitDialogMessage: waitDialogMessage, showPreviewChangesDialog: showPreviewChangesDialog);
-            var fixMultipleSuggestedAction = new FixMultipleSuggestedAction(workspace, _editHandler, fixMultipleCodeAction, fixAllProvider);
-            fixMultipleSuggestedAction.Invoke(cancellationToken);
+            var fixMultipleCodeAction = new FixMultipleCodeAction(fixMultipleContext, fixAllProvider, title, waitDialogMessage, showPreviewChangesDialog);
+            return new FixMultipleSuggestedAction(workspace, _editHandler, _waitIndicator, fixMultipleCodeAction, fixAllProvider);
         }
     }
 }

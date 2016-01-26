@@ -5,7 +5,7 @@ Imports Microsoft.CodeAnalysis.Rename.ConflictEngine
 Namespace Microsoft.CodeAnalysis.Editor.UnitTests.Rename
     Partial Public Class RenameEngineTests
         Public Class VisualBasicConflicts
-            <Fact(Skip:="798375, 799977")>
+            <WpfFact(Skip:="798375, 799977")>
             <WorkItem(798375)>
             <WorkItem(773543)>
             <Trait(Traits.Feature, Traits.Features.Rename)>
@@ -33,7 +33,7 @@ End Class
                 End Using
             End Sub
 
-            <Fact(Skip:="798375")>
+            <WpfFact(Skip:="798375")>
             <WorkItem(798375)>
             <WorkItem(773534)>
             <Trait(Traits.Feature, Traits.Features.Rename)>
@@ -625,7 +625,7 @@ End Module
             End Sub
 
             <WorkItem(639136), WorkItem(569103), WorkItem(755801)>
-            <Fact(Skip:="755801"), Trait(Traits.Feature, Traits.Features.Rename)>
+            <WpfFact(Skip:="755801"), Trait(Traits.Feature, Traits.Features.Rename)>
             Public Sub ConflictResolutionWithTypeInference_Cref()
                 Using result = RenameEngineResult.Create(
                     <Workspace>
@@ -1254,7 +1254,7 @@ End Class
 
             <WorkItem(529695)>
             <WorkItem(543016)>
-            <Fact(Skip:="529695"), Trait(Traits.Feature, Traits.Features.Rename)>
+            <WpfFact(Skip:="529695"), Trait(Traits.Feature, Traits.Features.Rename)>
             Public Sub RenameDoesNotBreakQuery()
                 Using result = RenameEngineResult.Create(
                         <Workspace>
@@ -1284,7 +1284,7 @@ End Class
                 End Using
             End Sub
 
-            <Fact(Skip:="566460")>
+            <WpfFact(Skip:="566460")>
             <Trait(Traits.Feature, Traits.Features.Rename)>
             <WorkItem(566460)>
             <WorkItem(542349)>
@@ -1410,7 +1410,7 @@ End Module
                 End Using
             End Sub
 
-            <Fact(Skip:="566542")>
+            <WpfFact(Skip:="566542")>
             <Trait(Traits.Feature, Traits.Features.Rename)>
             <WorkItem(542999)>
             <WorkItem(566542)>
@@ -1441,7 +1441,7 @@ End Namespace
                 End Using
             End Sub
 
-            <Fact(Skip:="566542")>
+            <WpfFact(Skip:="566542")>
             <Trait(Traits.Feature, Traits.Features.Rename)>
             <WorkItem(543068)>
             <WorkItem(566542)>
@@ -1828,7 +1828,7 @@ End Module
 
             <WorkItem(566542)>
             <WorkItem(545604)>
-            <Fact(Skip:="566542"), Trait(Traits.Feature, Traits.Features.Rename)>
+            <WpfFact(Skip:="566542"), Trait(Traits.Feature, Traits.Features.Rename)>
             Public Sub QualifyTypeNameInImports()
                 Using result = RenameEngineResult.Create(
                     <Workspace>
@@ -2783,7 +2783,7 @@ End Class
                 End Using
             End Sub
 
-            <Fact>
+            <WpfFact>
             <Trait(Traits.Feature, Traits.Features.Rename)>
             <WorkItem(905, "https://github.com/dotnet/roslyn/issues/905")>
             Public Sub RenamingCompilerGeneratedPropertyBackingField_InvokableFromBackingFieldReference()

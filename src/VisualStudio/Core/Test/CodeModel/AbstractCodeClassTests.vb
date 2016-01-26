@@ -1,5 +1,7 @@
 ' Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
+Imports Microsoft.VisualStudio.LanguageServices.Implementation.CodeModel.Interop
+
 Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.CodeModel
     Public MustInherit Class AbstractCodeClassTests
         Inherits AbstractCodeElementTests(Of EnvDTE80.CodeClass2)
@@ -163,5 +165,19 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.CodeModel
         Protected Overrides Sub RemoveImplementedInterface(codeElement As EnvDTE80.CodeClass2, element As Object)
             codeElement.RemoveInterface(element)
         End Sub
+
+        Protected Async Function TestGetBaseName(code As XElement, expectedBaseName As String) As Threading.Tasks.Task
+            Await TestElement(code,
+                Sub(codeClass)
+                    Dim codeClassBase = TryCast(codeClass, ICodeClassBase)
+                    Assert.NotNull(codeClassBase)
+
+                    Dim baseName As String = Nothing
+                    Dim hRetVal = codeClassBase.GetBaseName(baseName)
+                    Assert.Equal(VSConstants.S_OK, hRetVal)
+
+                    Assert.Equal(expectedBaseName, baseName)
+                End Sub)
+        End Function
     End Class
 End Namespace

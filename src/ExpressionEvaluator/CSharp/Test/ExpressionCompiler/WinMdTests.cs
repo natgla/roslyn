@@ -52,7 +52,7 @@ namespace Microsoft.CodeAnalysis.CSharp.UnitTests
                 ExpressionCompilerUtilities.GenerateUniqueName(),
                 ImmutableArray.Create(MscorlibRef).Concat(runtimeAssemblies), // no reference to Windows.winmd
                 exeBytes,
-                new SymReader(pdbBytes));
+                SymReaderFactory.CreateReader(pdbBytes));
             var context = CreateMethodContext(runtime, "C.M");
             string error;
             var testData = new CompilationTestData();
@@ -97,7 +97,7 @@ class C
                 ExpressionCompilerUtilities.GenerateUniqueName(),
                 ImmutableArray.Create(MscorlibRef).Concat(runtimeAssemblies), // no reference to Windows.winmd
                 exeBytes,
-                new SymReader(pdbBytes));
+                SymReaderFactory.CreateReader(pdbBytes));
             var context = CreateMethodContext(runtime, "C.M");
             string error;
             var testData = new CompilationTestData();
@@ -318,7 +318,7 @@ class C
                 "f.RenderSize",
                 DkmEvaluationFlags.TreatAsExpression,
                 NoAliases,
-                DiagnosticFormatter.Instance,
+                DebuggerDiagnosticFormatter.Instance,
                 out resultProperties,
                 out error,
                 out missingAssemblyIdentities,
@@ -347,6 +347,7 @@ class C
             ExpressionCompilerTestHelpers.CompileExpressionWithRetry(
                 runtime.Modules.SelectAsArray(m => m.MetadataBlock),
                 "c.Dispatcher",
+                ImmutableArray<Alias>.Empty,
                 (metadataBlocks, _) =>
                 {
                     return CreateMethodContext(runtime, "C.M");
@@ -388,7 +389,7 @@ class C
                 ExpressionCompilerUtilities.GenerateUniqueName(),
                 runtimeReferences.AddIntrinsicAssembly(),
                 exeBytes,
-                new SymReader(pdbBytes));
+                SymReaderFactory.CreateReader(pdbBytes));
         }
 
         private static byte[] ToVersion1_3(byte[] bytes)

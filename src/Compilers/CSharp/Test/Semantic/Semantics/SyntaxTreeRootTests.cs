@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Microsoft.CodeAnalysis.UnitTests;
 using Microsoft.CodeAnalysis.CSharp.Symbols;
+using Microsoft.CodeAnalysis.CSharp.Test.Utilities;
 
 namespace Microsoft.CodeAnalysis.CSharp.Semantic.UnitTests.Semantics
 {
@@ -56,7 +57,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Semantic.UnitTests.Semantics
             var arbitraryTree = SyntaxFactory.SyntaxTree(SyntaxFactory.Attribute(SyntaxFactory.IdentifierName("Wooh")));
             var parsedTree = SyntaxFactory.ParseSyntaxTree("");
             Assert.Throws<ArgumentException>(() => CSharpCompilation.Create("Grrr", syntaxTrees: new[] { arbitraryTree }));
-            Assert.Throws<ArgumentException>(() => CSharpCompilation.CreateSubmission("Wah").AddSyntaxTrees(arbitraryTree));
+            Assert.Throws<ArgumentException>(() => CSharpCompilation.CreateScriptCompilation("Wah").AddSyntaxTrees(arbitraryTree));
             Assert.Throws<ArgumentException>(() => CSharpCompilation.Create("Bahh", syntaxTrees: new[] { parsedTree }).ReplaceSyntaxTree(parsedTree, arbitraryTree));
             Assert.Throws<ArgumentException>(() => CSharpCompilation.Create("Woo").GetSemanticModel(arbitraryTree));
         }
@@ -64,7 +65,9 @@ namespace Microsoft.CodeAnalysis.CSharp.Semantic.UnitTests.Semantics
         [Fact]
         public void SyntaxFactoryIsCompleteSubmissionShouldNotThrowForArbitrarilyRootedTree()
         {
-            var tree = SyntaxFactory.SyntaxTree(SyntaxFactory.LetClause("Blah", SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(54))));
+            var tree = SyntaxFactory.SyntaxTree(
+                SyntaxFactory.LetClause("Blah", SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, SyntaxFactory.Literal(54))),
+                options: TestOptions.Script);
             SyntaxFactory.IsCompleteSubmission(tree);
         }
 

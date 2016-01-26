@@ -32,12 +32,12 @@ namespace Microsoft.CodeAnalysis.SpellCheck
             }
 
             SemanticModel semanticModel = null;
-            foreach(var name in node.DescendantNodesAndSelf().OfType<TSimpleName>())
+            foreach (var name in node.DescendantNodesAndSelf().OfType<TSimpleName>())
             {
                 // Only bother with identifiers that are at least 3 characters long.
                 // We don't want to be too noisy as you're just starting to type something.
                 var nameText = name.GetFirstToken().ValueText;
-                if (nameText.Length >= 3)
+                if (nameText?.Length >= 3)
                 {
                     semanticModel = semanticModel ?? await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
                     var symbolInfo = semanticModel.GetSymbolInfo(name, cancellationToken);
@@ -63,28 +63,29 @@ namespace Microsoft.CodeAnalysis.SpellCheck
             var onlyConsiderGenerics = IsGeneric(nameNode);
             var results = new MultiDictionary<double, string>();
 
-            int closeMatchThreshold = EditDistance.GetCloseMatchThreshold(nameText);
-
-            foreach (var item in completionList.Items)
+            using (var similarityChecker = new WordSimilarityChecker(nameText))
             {
-                if (onlyConsiderGenerics && !IsGeneric(item))
+                foreach (var item in completionList.Items)
                 {
-                    continue;
-                }
+                    if (onlyConsiderGenerics && !IsGeneric(item))
+                    {
+                        continue;
+                    }
 
-                var candidateText = item.FilterText;
-                double matchCost;
-                if (!EditDistance.IsCloseMatch(nameText, candidateText, closeMatchThreshold, out matchCost))
-                {
-                    continue;
-                }
+                    var candidateText = item.FilterText;
+                    double matchCost;
+                    if (!similarityChecker.AreSimilar(candidateText, out matchCost))
+                    {
+                        continue;
+                    }
 
-                var insertionText = completionRules.GetTextChange(item).NewText;
-                results.Add(matchCost, insertionText);
+                    var insertionText = completionRules.GetTextChange(item).NewText;
+                    results.Add(matchCost, insertionText);
+                }
             }
 
             var matches = results.OrderBy(kvp => kvp.Key)
-                                 .SelectMany(kvp => kvp.Value)
+                                 .SelectMany(kvp => kvp.Value.Order())
                                  .Where(t => t != nameText)
                                  .Take(3)
                                  .Select(n => CreateCodeAction(nameNode, nameText, n, document));

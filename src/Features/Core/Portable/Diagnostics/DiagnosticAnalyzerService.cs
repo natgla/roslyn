@@ -24,25 +24,36 @@ namespace Microsoft.CodeAnalysis.Diagnostics
 
         [ImportingConstructor]
         public DiagnosticAnalyzerService(
+            IDiagnosticUpdateSourceRegistrationService registrationService,
             [ImportMany] IEnumerable<Lazy<IAsynchronousOperationListener, FeatureMetadata>> asyncListeners,
             [Import(AllowDefault = true)]IWorkspaceDiagnosticAnalyzerProviderService diagnosticAnalyzerProviderService = null,
             [Import(AllowDefault = true)]AbstractHostDiagnosticUpdateSource hostDiagnosticUpdateSource = null)
             : this(diagnosticAnalyzerProviderService != null ? diagnosticAnalyzerProviderService.GetHostDiagnosticAnalyzerPackages() : SpecializedCollections.EmptyEnumerable<HostDiagnosticAnalyzerPackage>(),
-                   hostDiagnosticUpdateSource,
-                   new AggregateAsynchronousOperationListener(asyncListeners, FeatureAttribute.DiagnosticService))
+                diagnosticAnalyzerProviderService?.GetAnalyzerAssemblyLoader(),
+                hostDiagnosticUpdateSource,
+                registrationService, new AggregateAsynchronousOperationListener(asyncListeners, FeatureAttribute.DiagnosticService))
         {
         }
 
         public IAsynchronousOperationListener Listener => _listener;
 
         // protected for testing purposes.
-        protected DiagnosticAnalyzerService(IEnumerable<HostDiagnosticAnalyzerPackage> workspaceAnalyzerPackages, AbstractHostDiagnosticUpdateSource hostDiagnosticUpdateSource, IAsynchronousOperationListener listener = null)
-            : this (new HostAnalyzerManager(workspaceAnalyzerPackages, hostDiagnosticUpdateSource), hostDiagnosticUpdateSource, listener)
+        protected DiagnosticAnalyzerService(
+            IEnumerable<HostDiagnosticAnalyzerPackage> workspaceAnalyzerPackages,
+            IAnalyzerAssemblyLoader hostAnalyzerAssemblyLoader,
+            AbstractHostDiagnosticUpdateSource hostDiagnosticUpdateSource,
+            IDiagnosticUpdateSourceRegistrationService registrationService,
+            IAsynchronousOperationListener listener = null)
+            : this(new HostAnalyzerManager(workspaceAnalyzerPackages, hostAnalyzerAssemblyLoader, hostDiagnosticUpdateSource), hostDiagnosticUpdateSource, registrationService, listener)
         {
         }
 
         // protected for testing purposes.
-        protected DiagnosticAnalyzerService(HostAnalyzerManager hostAnalyzerManager, AbstractHostDiagnosticUpdateSource hostDiagnosticUpdateSource = null, IAsynchronousOperationListener listener = null) : this()
+        protected DiagnosticAnalyzerService(
+            HostAnalyzerManager hostAnalyzerManager,
+            AbstractHostDiagnosticUpdateSource hostDiagnosticUpdateSource,
+            IDiagnosticUpdateSourceRegistrationService registrationService,
+            IAsynchronousOperationListener listener = null) : this(registrationService)
         {
             _hostAnalyzerManager = hostAnalyzerManager;
             _hostDiagnosticUpdateSource = hostDiagnosticUpdateSource;
@@ -108,14 +119,14 @@ namespace Microsoft.CodeAnalysis.Diagnostics
             return _hostAnalyzerManager.IsAnalyzerSuppressed(analyzer, project);
         }
 
-        public void Reanalyze(Workspace workspace, IEnumerable<ProjectId> projectIds = null, IEnumerable<DocumentId> documentIds = null)
+        public void Reanalyze(Workspace workspace, IEnumerable<ProjectId> projectIds = null, IEnumerable<DocumentId> documentIds = null, bool highPriority = false)
         {
             BaseDiagnosticIncrementalAnalyzer analyzer;
 
             var service = workspace.Services.GetService<ISolutionCrawlerService>();
             if (service != null && _map.TryGetValue(workspace, out analyzer))
             {
-                service.Reanalyze(workspace, analyzer, projectIds, documentIds);
+                service.Reanalyze(workspace, analyzer, projectIds, documentIds, highPriority);
             }
         }
 

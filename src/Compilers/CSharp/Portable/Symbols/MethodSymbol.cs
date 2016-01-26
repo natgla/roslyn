@@ -364,7 +364,12 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             {
                 if (this.IsOverride && ReferenceEquals(this.ConstructedFrom, this))
                 {
-                    return (MethodSymbol)OverriddenOrHiddenMembers.GetOverriddenMember();
+                    if (IsDefinition)
+                    {
+                        return (MethodSymbol)OverriddenOrHiddenMembers.GetOverriddenMember();
+                    }
+
+                    return (MethodSymbol)OverriddenOrHiddenMembersResult.GetOverriddenMember(this, OriginalDefinition.OverriddenMethod);
                 }
 
                 return null;
@@ -749,12 +754,12 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
             if (typeArguments.Any(TypeSymbolIsNullFunction))
             {
-                throw new ArgumentException(CSharpResources.TypeArgumentCannotBeNull, "typeArguments");
+                throw new ArgumentException(CSharpResources.TypeArgumentCannotBeNull, nameof(typeArguments));
             }
 
             if (typeArguments.Length != this.Arity)
             {
-                throw new ArgumentException(CSharpResources.WrongNumberOfTypeArguments, "typeArguments");
+                throw new ArgumentException(CSharpResources.WrongNumberOfTypeArguments, nameof(typeArguments));
             }
 
             if (TypeParametersMatchTypeArguments(this.TypeParameters, typeArguments))

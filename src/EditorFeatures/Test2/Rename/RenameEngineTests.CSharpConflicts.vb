@@ -5,7 +5,7 @@ Imports Microsoft.CodeAnalysis.Rename.ConflictEngine
 Namespace Microsoft.CodeAnalysis.Editor.UnitTests.Rename
     Partial Public Class RenameEngineTest
         Public Class CSharpConflicts
-            <Fact(Skip:="799977")>
+            <WpfFact(Skip:="799977")>
             <WorkItem(773543)>
             <Trait(Traits.Feature, Traits.Features.Rename)>
             Public Sub BreakingRenameWithRollBacksInsideLambdas_2()
@@ -1226,7 +1226,7 @@ static class E
                 End Using
             End Sub
 
-            <Fact(Skip:="535068")>
+            <WpfFact(Skip:="535068")>
             <Trait(Traits.Feature, Traits.Features.Rename)>
             <WorkItem(535068)>
             <WorkItem(542821)>
@@ -1258,7 +1258,7 @@ static class E
                 End Using
             End Sub
 
-            <Fact(Skip:="535068")>
+            <WpfFact(Skip:="535068")>
             <Trait(Traits.Feature, Traits.Features.Rename)>
             <WorkItem(535068)>
             <WorkItem(542103)>
@@ -2838,7 +2838,7 @@ class D : C<int>
         End Sub
 
         <WorkItem(639136)>
-        <Fact(Skip:="Story 736967"), Trait(Traits.Feature, Traits.Features.Rename)>
+        <WpfFact(Skip:="Story 736967"), Trait(Traits.Feature, Traits.Features.Rename)>
         Public Sub GenericNameTypeInferenceExpansion_InErrorCode()
             Using result = RenameEngineResult.Create(
                 <Workspace>
@@ -3441,6 +3441,89 @@ partial class C
                    </Workspace>, renameTo:="Method")
 
                 result.AssertLabeledSpansAre("conflict", "Method", RelatedLocationType.UnresolvedConflict)
+            End Using
+        End Sub
+
+        <WorkItem(1439, "https://github.com/dotnet/roslyn/issues/1439")>
+        <Fact, Trait(Traits.Feature, Traits.Features.Rename)>
+        Public Sub RenameInsideNameOf1()
+            Using result = RenameEngineResult.Create(
+                    <Workspace>
+                        <Project Language="C#" CommonReferences="true">
+                            <Document>
+class Program
+{
+    int field;
+
+    static void Main(string[] args)
+    {
+        // Rename "local" to "field"
+        int [|$$local|];
+
+        nameof({|Conflict:field|}).ToString(); // Should also expand to Program.field
+    }
+}
+                            </Document>
+                        </Project>
+                    </Workspace>, renameTo:="field")
+
+                result.AssertLabeledSpansAre("Conflict", replacement:="nameof(Program.field).ToString();", type:=RelatedLocationType.ResolvedNonReferenceConflict)
+            End Using
+        End Sub
+
+        <WorkItem(1439, "https://github.com/dotnet/roslyn/issues/1439")>
+        <Fact, Trait(Traits.Feature, Traits.Features.Rename)>
+        Public Sub RenameInsideNameOf2()
+            Using result = RenameEngineResult.Create(
+                    <Workspace>
+                        <Project Language="C#" CommonReferences="true">
+                            <Document>
+class Program
+{
+    int field;
+
+    static void Main(string[] args)
+    {
+        // Rename "local" to "field"
+        int [|$$local|];
+
+        nameof({|Conflict:field|})?.ToString(); // Should also expand to Program.field
+    }
+}
+                            </Document>
+                        </Project>
+                    </Workspace>, renameTo:="field")
+
+                result.AssertLabeledSpansAre("Conflict", replacement:="nameof(Program.field)?.ToString();", type:=RelatedLocationType.ResolvedNonReferenceConflict)
+            End Using
+        End Sub
+
+        <WorkItem(1439, "https://github.com/dotnet/roslyn/issues/1439")>
+        <Fact, Trait(Traits.Feature, Traits.Features.Rename)>
+        Public Sub RenameInsideNameOf3()
+            Using result = RenameEngineResult.Create(
+                    <Workspace>
+                        <Project Language="C#" CommonReferences="true">
+                            <Document>
+class Program
+{
+    static int field;
+
+    static void Main(string[] args)
+    {
+        // Rename "local" to "field"
+        int [|$$local|];
+
+        Program.nameof({|Conflict:field|}); // Should also expand to Program.field
+    }
+
+    static void nameof(string s) { }
+}
+                            </Document>
+                        </Project>
+                    </Workspace>, renameTo:="field")
+
+                result.AssertLabeledSpansAre("Conflict", replacement:="Program.nameof(Program.field);", type:=RelatedLocationType.ResolvedNonReferenceConflict)
             End Using
         End Sub
     End Class

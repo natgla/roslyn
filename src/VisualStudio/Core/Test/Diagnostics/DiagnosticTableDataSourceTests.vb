@@ -2,12 +2,17 @@
 
 Imports System.Collections.Immutable
 Imports System.Threading
+Imports System.Threading.Tasks
 Imports System.Windows
 Imports System.Windows.Controls
 Imports Microsoft.CodeAnalysis
+Imports Microsoft.CodeAnalysis.Common
 Imports Microsoft.CodeAnalysis.Diagnostics
+Imports Microsoft.CodeAnalysis.Editor.UnitTests
 Imports Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
 Imports Microsoft.CodeAnalysis.Options
+Imports Microsoft.CodeAnalysis.Shared.TestHooks
+Imports Microsoft.CodeAnalysis.SolutionCrawler
 Imports Microsoft.CodeAnalysis.Text
 Imports Microsoft.VisualStudio.LanguageServices.Implementation.TableDataSource
 Imports Microsoft.VisualStudio.Shell.TableControl
@@ -18,8 +23,8 @@ Imports Roslyn.Utilities
 Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
     Public Class DiagnosticTableDataSourceTests
         <Fact>
-        Public Sub TestCreation()
-            Using workspace = CSharpWorkspaceFactory.CreateWorkspaceFromLines(String.Empty)
+        Public Async Function TestCreation() As Task
+            Using workspace = Await TestWorkspace.CreateCSharpAsync(String.Empty)
                 Dim provider = New TestDiagnosticService()
                 Dim tableManagerProvider = New TestTableManagerProvider()
 
@@ -47,11 +52,11 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
                 subscription.Dispose()
                 Assert.Equal(0, source.NumberOfSubscription_TestOnly)
             End Using
-        End Sub
+        End Function
 
         <Fact>
-        Public Sub TestInitialEntries()
-            Using workspace = CSharpWorkspaceFactory.CreateWorkspaceFromLines(String.Empty)
+        Public Async Function TestInitialEntries() As Task
+            Using workspace = Await TestWorkspace.CreateCSharpAsync(String.Empty)
                 Dim documentId = workspace.CurrentSolution.Projects.First().DocumentIds.First()
                 Dim provider = New TestDiagnosticService(CreateItem(workspace, documentId))
                 Dim tableManagerProvider = New TestTableManagerProvider()
@@ -66,11 +71,11 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
                 Dim sink = DirectCast(sinkAndSubscription.Key, TestTableManagerProvider.TestTableManager.TestSink)
                 Assert.Equal(1, sink.Entries.Count)
             End Using
-        End Sub
+        End Function
 
         <Fact>
-        Public Sub TestEntryChanged()
-            Using workspace = CSharpWorkspaceFactory.CreateWorkspaceFromLines(String.Empty)
+        Public Async Function TestEntryChanged() As Task
+            Using workspace = Await TestWorkspace.CreateCSharpAsync(String.Empty)
                 Dim documentId = workspace.CurrentSolution.Projects.First().DocumentIds.First()
                 Dim provider = New TestDiagnosticService()
                 Dim tableManagerProvider = New TestTableManagerProvider()
@@ -91,11 +96,11 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
                 provider.RaiseClearDiagnosticsUpdated(workspace, documentId.ProjectId, documentId)
                 Assert.Equal(0, sink.Entries.Count)
             End Using
-        End Sub
+        End Function
 
         <Fact>
-        Public Sub TestEntry()
-            Using workspace = CSharpWorkspaceFactory.CreateWorkspaceFromLines(String.Empty)
+        Public Async Function TestEntry() As Task
+            Using workspace = Await TestWorkspace.CreateCSharpAsync(String.Empty)
                 Dim documentId = workspace.CurrentSolution.Projects.First().DocumentIds.First()
 
                 Dim item = CreateItem(workspace, documentId)
@@ -132,11 +137,11 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
                 Assert.True(snapshot.TryGetValue(0, StandardTableKeyNames.Column, column))
                 Assert.Equal(If(item.DataLocation?.MappedStartColumn, 0), column)
             End Using
-        End Sub
+        End Function
 
         <Fact>
-        Public Sub TestSnapshotEntry()
-            Using workspace = CSharpWorkspaceFactory.CreateWorkspaceFromLines(String.Empty)
+        Public Async Function TestSnapshotEntry() As Task
+            Using workspace = Await TestWorkspace.CreateCSharpAsync(String.Empty)
                 Dim documentId = workspace.CurrentSolution.Projects.First().DocumentIds.First()
 
                 Dim item = CreateItem(workspace, documentId)
@@ -180,11 +185,11 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
                 Assert.True(snapshot1.TryGetValue(0, StandardTableKeyNames.Column, column))
                 Assert.Equal(If(item.DataLocation?.MappedStartColumn, 0), column)
             End Using
-        End Sub
+        End Function
 
         <Fact>
-        Public Sub TestInvalidEntry()
-            Using workspace = CSharpWorkspaceFactory.CreateWorkspaceFromLines(String.Empty)
+        Public Async Function TestInvalidEntry() As Task
+            Using workspace = Await TestWorkspace.CreateCSharpAsync(String.Empty)
                 Dim documentId = workspace.CurrentSolution.Projects.First().DocumentIds.First()
 
                 Dim item = CreateItem(workspace, documentId)
@@ -210,11 +215,11 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
                 Assert.False(snapshot.TryGetValue(1, StandardTableKeyNames.DocumentName, temp))
                 Assert.False(snapshot.TryGetValue(0, "Test", temp))
             End Using
-        End Sub
+        End Function
 
         <Fact>
-        Public Sub TestNoHiddenEntry()
-            Using workspace = CSharpWorkspaceFactory.CreateWorkspaceFromLines(String.Empty)
+        Public Async Function TestNoHiddenEntry() As Task
+            Using workspace = Await TestWorkspace.CreateCSharpAsync(String.Empty)
                 Dim documentId = workspace.CurrentSolution.Projects.First().DocumentIds.First()
 
                 Dim item = CreateItem(workspace, documentId, DiagnosticSeverity.Error)
@@ -237,11 +242,11 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
 
                 Assert.Equal(1, snapshot.Count)
             End Using
-        End Sub
+        End Function
 
         <Fact>
-        Public Sub TestProjectEntry()
-            Using workspace = CSharpWorkspaceFactory.CreateWorkspaceFromLines(String.Empty)
+        Public Async Function TestProjectEntry() As Task
+            Using workspace = Await TestWorkspace.CreateCSharpAsync(String.Empty)
                 Dim projectId = workspace.CurrentSolution.Projects.First().Id
 
                 Dim item = CreateItem(workspace, projectId, Nothing, DiagnosticSeverity.Error)
@@ -263,12 +268,12 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
 
                 Assert.Equal(1, snapshot.Count)
             End Using
-        End Sub
+        End Function
 
         <Fact>
-        Public Sub TestMultipleWorkspace()
-            Using workspace1 = CSharpWorkspaceFactory.CreateWorkspaceFromLines(String.Empty)
-                Using workspace2 = CSharpWorkspaceFactory.CreateWorkspaceFromLines(String.Empty)
+        Public Async Function TestMultipleWorkspace() As Task
+            Using workspace1 = Await TestWorkspace.CreateCSharpAsync(String.Empty)
+                Using workspace2 = Await TestWorkspace.CreateCSharpAsync(String.Empty)
                     Dim documentId = workspace1.CurrentSolution.Projects.First().DocumentIds.First()
                     Dim projectId = documentId.ProjectId
 
@@ -298,11 +303,11 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
                     Assert.Equal(2, sink.Entries.Count)
                 End Using
             End Using
-        End Sub
+        End Function
 
-        <Fact>
-        Public Sub TestDetailExpander()
-            Using workspace = CSharpWorkspaceFactory.CreateWorkspaceFromLines(String.Empty)
+        <WpfFact>
+        Public Async Function TestDetailExpander() As Task
+            Using workspace = Await TestWorkspace.CreateCSharpAsync(String.Empty)
                 Dim documentId = workspace.CurrentSolution.Projects.First().DocumentIds.First()
                 Dim projectId = documentId.ProjectId
 
@@ -335,11 +340,11 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
                 Assert.Equal(New Thickness(10, 6, 10, 8), textBlock.Padding)
                 Assert.Equal(Nothing, textBlock.Background)
             End Using
-        End Sub
+        End Function
 
         <Fact>
-        Public Sub TestHyperLink()
-            Using workspace = CSharpWorkspaceFactory.CreateWorkspaceFromLines(String.Empty)
+        Public Async Function TestHyperLink() As Task
+            Using workspace = Await TestWorkspace.CreateCSharpAsync(String.Empty)
                 Dim documentId = workspace.CurrentSolution.Projects.First().DocumentIds.First()
                 Dim projectId = documentId.ProjectId
 
@@ -367,11 +372,11 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
 
                 Assert.Null(ui)
             End Using
-        End Sub
+        End Function
 
         <Fact>
-        Public Sub TestBingHyperLink()
-            Using workspace = CSharpWorkspaceFactory.CreateWorkspaceFromLines(String.Empty)
+        Public Async Function TestBingHyperLink() As Task
+            Using workspace = Await TestWorkspace.CreateCSharpAsync(String.Empty)
                 Dim documentId = workspace.CurrentSolution.Projects.First().DocumentIds.First()
                 Dim projectId = documentId.ProjectId
 
@@ -399,11 +404,11 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
 
                 Assert.Null(ui)
             End Using
-        End Sub
+        End Function
 
         <Fact>
-        Public Sub TestHelpLink()
-            Using workspace = CSharpWorkspaceFactory.CreateWorkspaceFromLines(String.Empty)
+        Public Async Function TestHelpLink() As Task
+            Using workspace = Await TestWorkspace.CreateCSharpAsync(String.Empty)
                 Dim documentId = workspace.CurrentSolution.Projects.First().DocumentIds.First()
                 Dim projectId = documentId.ProjectId
 
@@ -428,11 +433,40 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
 
                 Assert.Equal(item1.HelpLink, helpLink.ToString())
             End Using
-        End Sub
+        End Function
 
         <Fact>
-        Public Sub TestBingHelpLink()
-            Using workspace = CSharpWorkspaceFactory.CreateWorkspaceFromLines(String.Empty)
+        Public Async Function TestHelpKeyword() As Task
+            Using workspace = Await TestWorkspace.CreateCSharpAsync(String.Empty)
+                Dim documentId = workspace.CurrentSolution.Projects.First().DocumentIds.First()
+                Dim projectId = documentId.ProjectId
+
+                Dim item1 = CreateItem(workspace, projectId, documentId, DiagnosticSeverity.Error, "http://link/")
+                Dim provider = New TestDiagnosticService(item1)
+
+                Dim tableManagerProvider = New TestTableManagerProvider()
+
+                Dim table = New VisualStudioDiagnosticListTable(workspace, provider, tableManagerProvider)
+                provider.RaiseDiagnosticsUpdated(workspace)
+
+                Dim manager = DirectCast(table.TableManager, TestTableManagerProvider.TestTableManager)
+                Dim source = DirectCast(manager.Sources.First(), AbstractRoslynTableDataSource(Of DiagnosticData))
+                Dim sinkAndSubscription = manager.Sinks_TestOnly.First()
+
+                Dim sink = DirectCast(sinkAndSubscription.Key, TestTableManagerProvider.TestTableManager.TestSink)
+                Dim snapshot = sink.Entries.First().GetCurrentSnapshot()
+                Assert.Equal(1, snapshot.Count)
+
+                Dim keyword As Object = Nothing
+                Assert.True(snapshot.TryGetValue(0, StandardTableKeyNames.HelpKeyword, keyword))
+
+                Assert.Equal(item1.Id, keyword.ToString())
+            End Using
+        End Function
+
+        <Fact>
+        Public Async Function TestBingHelpLink() As Task
+            Using workspace = Await TestWorkspace.CreateCSharpAsync(String.Empty)
                 Dim documentId = workspace.CurrentSolution.Projects.First().DocumentIds.First()
                 Dim projectId = documentId.ProjectId
 
@@ -457,12 +491,12 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
 
                 Assert.True(helpLink.ToString().IndexOf("https://bingdev.cloudapp.net/BingUrl.svc/Get?selectedText=test%20format&mainLanguage=C%23&projectType=%7BFAE04EC0-301F-11D3-BF4B-00C04F79EFBC%7D") = 0)
             End Using
-        End Sub
+        End Function
 
         <Fact>
-        Public Sub TestBingHelpLink_NoCustomType()
-            Using workspace = CSharpWorkspaceFactory.CreateWorkspaceFromLines("class A { int 111a; }")
-                Dim diagnostic = workspace.CurrentSolution.Projects.First().GetCompilationAsync().Result.GetDiagnostics().First(Function(d) d.Id = "CS1519")
+        Public Async Function TestBingHelpLink_NoCustomType() As Task
+            Using workspace = Await TestWorkspace.CreateCSharpAsync("class A { int 111a; }")
+                Dim diagnostic = (Await workspace.CurrentSolution.Projects.First().GetCompilationAsync()).GetDiagnostics().First(Function(d) d.Id = "CS1519")
 
                 Dim helpMessage = diagnostic.GetBingHelpMessage(workspace)
                 Assert.Equal("Invalid token '111' in class, struct, or interface member declaration", helpMessage)
@@ -474,11 +508,11 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
                 Dim helpMessage2 = diagnostic.GetBingHelpMessage(workspace)
                 Assert.Equal("Invalid token '{0}' in class, struct, or interface member declaration", helpMessage2)
             End Using
-        End Sub
+        End Function
 
         <Fact>
-        Public Sub TestErrorSource()
-            Using workspace = CSharpWorkspaceFactory.CreateWorkspaceFromLines(String.Empty)
+        Public Async Function TestErrorSource() As Task
+            Using workspace = Await TestWorkspace.CreateCSharpAsync(String.Empty)
                 Dim documentId = workspace.CurrentSolution.Projects.First().DocumentIds.First()
                 Dim projectId = documentId.ProjectId
 
@@ -503,6 +537,132 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
 
                 Assert.Equal("BuildTool", buildTool.ToString())
             End Using
+        End Function
+
+        <Fact>
+        Public Async Function TestWorkspaceDiagnostic() As Task
+            Using workspace = Await TestWorkspace.CreateCSharpAsync(String.Empty)
+                Dim documentId = workspace.CurrentSolution.Projects.First().DocumentIds.First()
+                Dim projectId = documentId.ProjectId
+
+                Dim item1 = CreateItem(workspace, Nothing, Nothing, DiagnosticSeverity.Error, "http://link/")
+                Dim provider = New TestDiagnosticService(item1)
+
+                Dim tableManagerProvider = New TestTableManagerProvider()
+
+                Dim table = New VisualStudioDiagnosticListTable(workspace, provider, tableManagerProvider)
+                provider.RaiseDiagnosticsUpdated(workspace)
+
+                Dim manager = DirectCast(table.TableManager, TestTableManagerProvider.TestTableManager)
+                Dim source = DirectCast(manager.Sources.First(), AbstractRoslynTableDataSource(Of DiagnosticData))
+                Dim sinkAndSubscription = manager.Sinks_TestOnly.First()
+
+                Dim sink = DirectCast(sinkAndSubscription.Key, TestTableManagerProvider.TestTableManager.TestSink)
+                Dim snapshot = sink.Entries.First().GetCurrentSnapshot()
+                Assert.Equal(1, snapshot.Count)
+
+                Dim filename As Object = Nothing
+                Assert.False(snapshot.TryGetValue(0, StandardTableKeyNames.DocumentName, filename))
+
+                Dim projectname As Object = Nothing
+                Assert.False(snapshot.TryGetValue(0, StandardTableKeyNames.ProjectName, projectname))
+            End Using
+        End Function
+
+        <Fact>
+        Public Async Function TestProjectDiagnostic() As Task
+            Using workspace = Await TestWorkspace.CreateCSharpAsync(String.Empty)
+                Dim documentId = workspace.CurrentSolution.Projects.First().DocumentIds.First()
+                Dim projectId = documentId.ProjectId
+
+                Dim item1 = CreateItem(workspace, projectId, Nothing, DiagnosticSeverity.Error, "http://link/")
+                Dim provider = New TestDiagnosticService(item1)
+
+                Dim tableManagerProvider = New TestTableManagerProvider()
+
+                Dim table = New VisualStudioDiagnosticListTable(workspace, provider, tableManagerProvider)
+                provider.RaiseDiagnosticsUpdated(workspace)
+
+                Dim manager = DirectCast(table.TableManager, TestTableManagerProvider.TestTableManager)
+                Dim source = DirectCast(manager.Sources.First(), AbstractRoslynTableDataSource(Of DiagnosticData))
+                Dim sinkAndSubscription = manager.Sinks_TestOnly.First()
+
+                Dim sink = DirectCast(sinkAndSubscription.Key, TestTableManagerProvider.TestTableManager.TestSink)
+                Dim snapshot = sink.Entries.First().GetCurrentSnapshot()
+                Assert.Equal(1, snapshot.Count)
+
+                Dim filename As Object = Nothing
+                Assert.False(snapshot.TryGetValue(0, StandardTableKeyNames.DocumentName, filename))
+
+                Dim projectname As Object = Nothing
+                Assert.True(snapshot.TryGetValue(0, StandardTableKeyNames.ProjectName, projectname))
+
+                Assert.Equal("Test", projectname)
+            End Using
+        End Function
+
+        <WpfFact>
+        Public Async Function TestAggregatedDiagnostic() As Task
+            Dim markup = <Workspace>
+                             <Project Language="C#" CommonReferences="true" AssemblyName="Proj1">
+                                 <Document FilePath="CurrentDocument.cs"><![CDATA[class { }]]></Document>
+                             </Project>
+                             <Project Language="C#" CommonReferences="true" AssemblyName="Proj2">
+                                 <Document IsLinkFile="true" LinkAssemblyName="Proj1" LinkFilePath="CurrentDocument.cs"/>
+                             </Project>
+                         </Workspace>
+
+            Using workspace = Await TestWorkspace.CreateAsync(markup)
+
+                Dim asyncListener = New AsynchronousOperationListener()
+                Dim listeners = AsynchronousOperationListener.CreateListeners(ValueTuple.Create(FeatureAttribute.DiagnosticService, asyncListener))
+
+                Dim service = New DiagnosticService(listeners)
+
+                Dim tableManagerProvider = New TestTableManagerProvider()
+                Dim table = New VisualStudioDiagnosticListTable(workspace, service, tableManagerProvider)
+
+                RunCompilerAnalyzer(workspace, service, New AggregateAsynchronousOperationListener(listeners, FeatureAttribute.DiagnosticService))
+
+                Await asyncListener.CreateWaitTask()
+
+                Dim manager = DirectCast(table.TableManager, TestTableManagerProvider.TestTableManager)
+                Dim source = DirectCast(manager.Sources.First(), AbstractRoslynTableDataSource(Of DiagnosticData))
+                Dim sinkAndSubscription = manager.Sinks_TestOnly.First()
+
+                Dim sink = DirectCast(sinkAndSubscription.Key, TestTableManagerProvider.TestTableManager.TestSink)
+                Dim snapshot = sink.Entries.First().GetCurrentSnapshot()
+                Assert.Equal(1, snapshot.Count)
+
+                Dim filename As Object = Nothing
+                Assert.True(snapshot.TryGetValue(0, StandardTableKeyNames.DocumentName, filename))
+                Assert.Equal("CurrentDocument.cs", filename)
+
+                Dim projectname As Object = Nothing
+                Assert.True(snapshot.TryGetValue(0, StandardTableKeyNames.ProjectName, projectname))
+                Assert.Equal("Proj1, Proj2", projectname)
+
+                Dim projectnames As Object = Nothing
+                Assert.True(snapshot.TryGetValue(0, StandardTableKeyNames.ProjectName + "s", projectnames))
+                Assert.Equal(2, DirectCast(projectnames, String()).Length)
+
+                Dim projectguid As Object = Nothing
+                Assert.False(snapshot.TryGetValue(0, StandardTableKeyNames.ProjectGuid, projectguid))
+            End Using
+        End Function
+
+        Private Sub RunCompilerAnalyzer(workspace As TestWorkspace, registrationService As IDiagnosticUpdateSourceRegistrationService, listener As IAsynchronousOperationListener)
+            Dim snapshot = workspace.CurrentSolution
+
+            Dim notificationService = New TestForegroundNotificationService()
+
+            Dim compilerAnalyzersMap = DiagnosticExtensions.GetCompilerDiagnosticAnalyzersMap()
+            Dim analyzerService = New MyDiagnosticAnalyzerService(compilerAnalyzersMap, registrationService, listener)
+
+            Dim service = DirectCast(workspace.Services.GetService(Of ISolutionCrawlerRegistrationService)(), SolutionCrawlerRegistrationService)
+            service.Register(workspace)
+
+            service.WaitUntilCompletion_ForTestingPurposesOnly(workspace, SpecializedCollections.SingletonEnumerable(analyzerService.CreateIncrementalAnalyzer(workspace)).WhereNotNull().ToImmutableArray())
         End Sub
 
         Private Function CreateItem(workspace As Workspace, documentId As DocumentId, Optional severity As DiagnosticSeverity = DiagnosticSeverity.Error) As DiagnosticData
@@ -511,9 +671,23 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
 
         Private Function CreateItem(workspace As Workspace, projectId As ProjectId, documentId As DocumentId, Optional severity As DiagnosticSeverity = DiagnosticSeverity.Error, Optional link As String = Nothing) As DiagnosticData
             Return New DiagnosticData("test", "test", "test", "test format", severity, True, 0,
-                                      workspace, projectId, New DiagnosticDataLocation(documentId, TextSpan.FromBounds(0, 10), "test", 20, 20, 20, 20),
+                                      workspace, projectId, If(documentId Is Nothing, Nothing, New DiagnosticDataLocation(documentId, TextSpan.FromBounds(0, 10), "test", 20, 20, 20, 20)),
                                       title:="Title", description:="Description", helpLink:=link)
         End Function
+
+        Private Class MyDiagnosticAnalyzerService
+            Inherits DiagnosticAnalyzerService
+
+            Friend Sub New(
+                    analyzersMap As ImmutableDictionary(Of String, ImmutableArray(Of DiagnosticAnalyzer)),
+                    registrationService As IDiagnosticUpdateSourceRegistrationService,
+                    listener As IAsynchronousOperationListener)
+                MyBase.New(New HostAnalyzerManager(ImmutableArray.Create(Of AnalyzerReference)(New TestAnalyzerReferenceByLanguage(analyzersMap)), hostDiagnosticUpdateSource:=Nothing),
+                      hostDiagnosticUpdateSource:=Nothing,
+                      registrationService:=registrationService,
+                      listener:=listener)
+            End Sub
+        End Class
 
         Private Class TestDiagnosticService
             Implements IDiagnosticService
@@ -536,7 +710,7 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
                 ElseIf projectId IsNot Nothing Then
                     diagnostics = Items.Where(Function(t) t.ProjectId Is projectId).ToImmutableArrayOrEmpty()
                 Else
-                    diagnostics = ImmutableArray(Of DiagnosticData).Empty
+                    diagnostics = Items.ToImmutableArrayOrEmpty()
                 End If
 
                 If Not reportSuppressedDiagnostics Then
@@ -546,11 +720,44 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
                 Return diagnostics
             End Function
 
+            Public Function GetDiagnosticsArgs(workspace As Workspace, projectId As ProjectId, documentId As DocumentId, cancellationToken As CancellationToken) As IEnumerable(Of UpdatedEventArgs) Implements IDiagnosticService.GetDiagnosticsUpdatedEventArgs
+                Assert.NotNull(workspace)
+
+                Dim diagnosticsArgs As IEnumerable(Of UpdatedEventArgs)
+
+                If documentId IsNot Nothing Then
+                    diagnosticsArgs = Items.Where(Function(t) t.DocumentId Is documentId) _
+                                           .Select(
+                                                Function(t)
+                                                    Return New UpdatedEventArgs(
+                                                        New ErrorId(Me, If(CObj(t.DocumentId), t.ProjectId)),
+                                                        t.Workspace, t.ProjectId, t.DocumentId)
+                                                End Function).ToImmutableArrayOrEmpty()
+                ElseIf projectId IsNot Nothing Then
+                    diagnosticsArgs = Items.Where(Function(t) t.ProjectId Is projectId) _
+                                           .Select(
+                                                Function(t)
+                                                    Return New UpdatedEventArgs(
+                                                        New ErrorId(Me, If(CObj(t.DocumentId), t.ProjectId)),
+                                                        t.Workspace, t.ProjectId, t.DocumentId)
+                                                End Function).ToImmutableArrayOrEmpty()
+                Else
+                    diagnosticsArgs = Items.Select(
+                                                Function(t)
+                                                    Return New UpdatedEventArgs(
+                                                        New ErrorId(Me, If(CObj(t.DocumentId), t.ProjectId)),
+                                                        t.Workspace, t.ProjectId, t.DocumentId)
+                                                End Function).ToImmutableArrayOrEmpty()
+                End If
+
+                Return diagnosticsArgs
+            End Function
+
             Public Sub RaiseDiagnosticsUpdated(workspace As Workspace, ParamArray items As DiagnosticData())
                 Dim item = items(0)
 
                 Dim id = If(CObj(item.DocumentId), item.ProjectId)
-                RaiseEvent DiagnosticsUpdated(Me, New DiagnosticsUpdatedArgs(
+                RaiseEvent DiagnosticsUpdated(Me, DiagnosticsUpdatedArgs.DiagnosticsCreated(
                         New ErrorId(Me, id), workspace, workspace.CurrentSolution, item.ProjectId, item.DocumentId, items.ToImmutableArray()))
             End Sub
 
@@ -558,21 +765,21 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Diagnostics
                 Dim documentMap = Items.Where(Function(t) t.DocumentId IsNot Nothing).Where(Function(t) t.Workspace Is workspace).ToLookup(Function(t) t.DocumentId)
 
                 For Each group In documentMap
-                    RaiseEvent DiagnosticsUpdated(Me, New DiagnosticsUpdatedArgs(
+                    RaiseEvent DiagnosticsUpdated(Me, DiagnosticsUpdatedArgs.DiagnosticsCreated(
                         New ErrorId(Me, group.Key), workspace, workspace.CurrentSolution, group.Key.ProjectId, group.Key, group.ToImmutableArrayOrEmpty()))
                 Next
 
                 Dim projectMap = Items.Where(Function(t) t.DocumentId Is Nothing).Where(Function(t) t.Workspace Is workspace).ToLookup(Function(t) t.ProjectId)
 
                 For Each group In projectMap
-                    RaiseEvent DiagnosticsUpdated(Me, New DiagnosticsUpdatedArgs(
+                    RaiseEvent DiagnosticsUpdated(Me, DiagnosticsUpdatedArgs.DiagnosticsCreated(
                         New ErrorId(Me, group.Key), workspace, workspace.CurrentSolution, group.Key, Nothing, group.ToImmutableArrayOrEmpty()))
                 Next
             End Sub
 
             Public Sub RaiseClearDiagnosticsUpdated(workspace As Workspace, projectId As ProjectId, documentId As DocumentId)
-                RaiseEvent DiagnosticsUpdated(Me, New DiagnosticsUpdatedArgs(
-                    New ErrorId(Me, documentId), workspace, workspace.CurrentSolution, projectId, documentId, ImmutableArray(Of DiagnosticData).Empty))
+                RaiseEvent DiagnosticsUpdated(Me, DiagnosticsUpdatedArgs.DiagnosticsRemoved(
+                    New ErrorId(Me, documentId), workspace, workspace.CurrentSolution, projectId, documentId))
             End Sub
 
             Private Class ErrorId

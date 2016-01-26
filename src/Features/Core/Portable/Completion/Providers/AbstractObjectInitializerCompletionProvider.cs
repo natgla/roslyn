@@ -43,12 +43,12 @@ namespace Microsoft.CodeAnalysis.Completion.Providers
             {
                 context.MakeExclusive(true);
             }
-
+            var enclosing = semanticModel.GetEnclosingNamedTypeOrAssembly(position, cancellationToken);
             // Find the members that can be initialized. If we have a NamedTypeSymbol, also get the overridden members.
             IEnumerable<ISymbol> members = semanticModel.LookupSymbols(position, initializedType);
             members = members.Where(m => IsInitializable(m, initializedType) &&
                                          m.CanBeReferencedByName &&
-                                         IsLegalFieldOrProperty(m) &&
+                                         IsLegalFieldOrProperty(m, enclosing) &&
                                          !m.IsImplicitlyDeclared);
 
             // Filter out those members that have already been typed
@@ -63,7 +63,7 @@ namespace Microsoft.CodeAnalysis.Completion.Providers
             foreach (var uninitializedMember in uninitializedMembers)
             {
                 context.AddItem(CreateItem(
-                    workspace, 
+                    workspace,
                     uninitializedMember.Name,
                     filterSpan,
                     CommonCompletionUtilities.CreateDescriptionFactory(workspace, semanticModel, initializerLocation.SourceSpan.Start, uninitializedMember),
@@ -73,10 +73,10 @@ namespace Microsoft.CodeAnalysis.Completion.Providers
 
         protected abstract Task<bool> IsExclusiveAsync(Document document, int position, CancellationToken cancellationToken);
 
-        private bool IsLegalFieldOrProperty(ISymbol symbol)
+        private bool IsLegalFieldOrProperty(ISymbol symbol, ISymbol within)
         {
             var type = symbol.GetMemberType();
-            if (type != null && type.CanSupportCollectionInitializer())
+            if (type != null && type.CanSupportCollectionInitializer(within))
             {
                 return true;
             }

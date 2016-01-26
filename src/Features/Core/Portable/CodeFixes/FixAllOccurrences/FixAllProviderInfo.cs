@@ -93,9 +93,9 @@ namespace Microsoft.CodeAnalysis.CodeFixes
                 FixAllProvider fixAllProvider,
                 IEnumerable<string> supportedDiagnosticIds,
                 IEnumerable<FixAllScope> supportedScopes)
-                : base (fixAllProvider, supportedScopes)
+                : base(fixAllProvider, supportedScopes)
             {
-                this._supportedDiagnosticIds = supportedDiagnosticIds;
+                _supportedDiagnosticIds = supportedDiagnosticIds;
             }
 
             public override bool CanBeFixed(Diagnostic diagnostic)
@@ -106,7 +106,7 @@ namespace Microsoft.CodeAnalysis.CodeFixes
 
         private class SuppressionFixerFixAllProviderInfo : FixAllProviderInfo
         {
-            private readonly Func<Diagnostic, bool> _canBeSuppressedOrTriaged;
+            private readonly Func<Diagnostic, bool> _canBeSuppressedOrUnsuppressed;
 
             public SuppressionFixerFixAllProviderInfo(
                 FixAllProvider fixAllProvider,
@@ -114,12 +114,12 @@ namespace Microsoft.CodeAnalysis.CodeFixes
                 IEnumerable<FixAllScope> supportedScopes)
                 : base(fixAllProvider, supportedScopes)
             {
-                this._canBeSuppressedOrTriaged = suppressionFixer.CanBeSuppressed;
+                _canBeSuppressedOrUnsuppressed = suppressionFixer.CanBeSuppressedOrUnsuppressed;
             }
 
             public override bool CanBeFixed(Diagnostic diagnostic)
             {
-                return _canBeSuppressedOrTriaged(diagnostic);
+                return _canBeSuppressedOrUnsuppressed(diagnostic);
             }
         }
     }

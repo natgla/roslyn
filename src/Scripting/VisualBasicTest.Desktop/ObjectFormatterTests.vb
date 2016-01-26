@@ -1,10 +1,10 @@
 ' Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
-Imports Microsoft.CodeAnalysis.Scripting.UnitTests
+Imports Microsoft.CodeAnalysis.Scripting.Hosting.UnitTests
 Imports ObjectFormatterFixtures
 Imports Xunit
 
-Namespace Microsoft.CodeAnalysis.Scripting.VisualBasic.UnitTests
+Namespace Microsoft.CodeAnalysis.VisualBasic.Scripting.Hosting.UnitTests
 
     Public Class ObjectFormatterTests
         Inherits ObjectFormatterTestBase
@@ -61,4 +61,5 @@ Namespace Microsoft.CodeAnalysis.Scripting.VisualBasic.UnitTests
             Assert.Equal("SortedList(1) { { Integer(1) { 3 }, Integer(1) { 4 } } }", str)
         End Sub
     End Class
+
 End Namespace

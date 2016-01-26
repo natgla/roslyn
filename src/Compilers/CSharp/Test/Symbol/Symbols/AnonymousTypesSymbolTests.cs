@@ -1444,7 +1444,7 @@ class Query
         {
             //  this test checks whether or not anonymous types which came from speculative 
             //  semantic API have any effect on the anonymous types emitted and
-            //  wherer or not the order is still the same across several emits
+            //  whether or not the order is still the same across several emits
 
             var source1 = @"
 using System;
@@ -1484,7 +1484,7 @@ class Class3
     }
 }
 ";
-            var compilation = GetCompilationForEmit(new string[] { source1, source2, source3 }, null, TestOptions.ReleaseDll.WithMetadataImportOptions(MetadataImportOptions.Internal), TestOptions.Regular);
+            var compilation = (CSharpCompilation)GetCompilationForEmit(new string[] { source1, source2, source3 }, null, TestOptions.ReleaseDll.WithMetadataImportOptions(MetadataImportOptions.Internal), TestOptions.Regular);
 
             for (int i = 0; i < 10; i++)
             {

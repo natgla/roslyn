@@ -2,6 +2,7 @@
 
 using System;
 using System.ComponentModel.Design;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
@@ -9,13 +10,14 @@ using Microsoft.CodeAnalysis.Editor;
 using Microsoft.CodeAnalysis.Editor.Host;
 using Microsoft.CodeAnalysis.Editor.Shared.Utilities;
 using Microsoft.CodeAnalysis.ErrorReporting;
+using Microsoft.CodeAnalysis.Utilities;
 using Microsoft.CodeAnalysis.Versions;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.LanguageServices.Implementation;
 using Microsoft.VisualStudio.LanguageServices.Implementation.Library.FindResults;
+using Microsoft.VisualStudio.LanguageServices.Implementation.ProjectSystem;
 using Microsoft.VisualStudio.LanguageServices.Implementation.ProjectSystem.RuleSets;
 using Microsoft.VisualStudio.LanguageServices.Implementation.TableDataSource;
-using Microsoft.VisualStudio.LanguageServices.Implementation.TaskList;
 using Microsoft.VisualStudio.LanguageServices.Utilities;
 using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
@@ -26,7 +28,7 @@ namespace Microsoft.VisualStudio.LanguageServices.Setup
 {
     [Guid(Guids.RoslynPackageIdString)]
     [PackageRegistration(UseManagedResourcesOnly = true)]
-    [ProvideMenuResource("Menus.ctmenu", version: 10)]
+    [ProvideMenuResource("Menus.ctmenu", version: 12)]
     internal class RoslynPackage : Package
     {
         private LibraryManager _libraryManager;
@@ -41,7 +43,10 @@ namespace Microsoft.VisualStudio.LanguageServices.Setup
         {
             base.Initialize();
 
-            ForegroundThreadAffinitizedObject.Initialize();
+            ForegroundThreadAffinitizedObject.CurrentForegroundThreadData = ForegroundThreadData.CreateDefault();
+            Debug.Assert(
+                ForegroundThreadAffinitizedObject.CurrentForegroundThreadData.Kind == ForegroundThreadDataKind.Wpf ||
+                ForegroundThreadAffinitizedObject.CurrentForegroundThreadData.Kind == ForegroundThreadDataKind.JoinableTask);
 
             FatalError.Handler = FailFast.OnFatalException;
             FatalError.NonFatalHandler = WatsonReporter.Report;
@@ -149,6 +154,10 @@ namespace Microsoft.VisualStudio.LanguageServices.Setup
             this.ComponentModel.GetExtensions<INavigableItemsPresenter>();
             this.ComponentModel.GetService<VisualStudioMetadataAsSourceFileSupportService>();
             this.ComponentModel.GetService<VirtualMemoryNotificationListener>();
+
+            // The misc files workspace needs to be loaded on the UI thread.  This way it will have
+            // the appropriate task scheduler to report events on.
+            this.ComponentModel.GetService<MiscellaneousFilesWorkspace>();
 
             LoadAnalyzerNodeComponents();
 

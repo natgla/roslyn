@@ -12,6 +12,11 @@ namespace Microsoft.CodeAnalysis.CSharp.CodeGen
 {
     internal partial class CodeGenerator
     {
+        private int _recursionDepth;
+
+        private class EmitCancelledException : Exception
+        { }
+
         private void EmitExpression(BoundExpression expression, bool used)
         {
             if (expression == null)
@@ -35,6 +40,41 @@ namespace Microsoft.CodeAnalysis.CSharp.CodeGen
                 }
             }
 
+            _recursionDepth++;
+
+            if (_recursionDepth > 1)
+            {
+                StackGuard.EnsureSufficientExecutionStack(_recursionDepth);
+
+                EmitExpressionCore(expression, used);
+            }
+            else
+            {
+                EmitExpressionCoreWithStackGuard(expression, used);
+            }
+
+            _recursionDepth--;
+        }
+
+        private void EmitExpressionCoreWithStackGuard(BoundExpression expression, bool used)
+        {
+            Debug.Assert(_recursionDepth == 1);
+
+            try
+            {
+                EmitExpressionCore(expression, used);
+                Debug.Assert(_recursionDepth == 1);
+            }
+            catch (Exception ex) when (StackGuard.IsInsufficientExecutionStackException(ex))
+            {
+                _diagnostics.Add(ErrorCode.ERR_InsufficientStack, 
+                                 BoundTreeVisitor.CancelledByStackGuardException.GetTooLongOrComplexExpressionErrorLocation(expression));
+                throw new EmitCancelledException();
+            }
+        }
+
+        private void EmitExpressionCore(BoundExpression expression, bool used)
+        {
             switch (expression.Kind)
             {
                 case BoundKind.AssignmentOperator:
@@ -1415,7 +1455,7 @@ namespace Microsoft.CodeAnalysis.CSharp.CodeGen
             {
                 EmitPopIfUnused(used);
             }
-            else if (_optimizations == OptimizationLevel.Debug)
+            else if (_ilEmitStyle == ILEmitStyle.Debug)
             {
                 // The only void methods with usable return values are constructors and we represent those
                 // as BoundObjectCreationExpressions, not BoundCalls.
@@ -1557,7 +1597,9 @@ namespace Microsoft.CodeAnalysis.CSharp.CodeGen
             }
 
             var containingType = method.ContainingType;
-            return containingType.IsIntrinsicType() || containingType.IsRestrictedType();
+            // overrides in structs that are special types can be caled directly.
+            // we can assume that special types will not be removing oiverrides
+            return containingType.SpecialType != SpecialType.None;
         }
 
         /// <summary>
@@ -2444,15 +2486,18 @@ namespace Microsoft.CodeAnalysis.CSharp.CodeGen
         {
             if (used)
             {
-                var constantValue = type.GetDefaultValue();
-                if (constantValue != null)
+                // default type parameter values must be emitted as 'initobj' regardless of constraints
+                if (!type.IsTypeParameter())
                 {
-                    _builder.EmitConstantValue(constantValue);
+                    var constantValue = type.GetDefaultValue();
+                    if (constantValue != null)
+                    {
+                        _builder.EmitConstantValue(constantValue);
+                        return;
+                    }
                 }
-                else
-                {
-                    EmitInitObj(type, true, syntaxNode);
-                }
+
+                EmitInitObj(type, true, syntaxNode);
             }
         }
 

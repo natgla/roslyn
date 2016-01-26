@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -48,13 +49,23 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.RenameTracking
         private readonly CodeFixProvider _codeFixProvider;
         private readonly RenameTrackingCancellationCommandHandler _commandHandler = new RenameTrackingCancellationCommandHandler();
 
-        public RenameTrackingTestState(
+        public static async Task<RenameTrackingTestState> CreateAsync(
             string markup,
             string languageName,
             bool onBeforeGlobalSymbolRenamedReturnValue = true,
             bool onAfterGlobalSymbolRenamedReturnValue = true)
         {
-            this.Workspace = CreateTestWorkspace(markup, languageName, TestExportProvider.CreateExportProviderWithCSharpAndVisualBasic());
+            var workspace = await CreateTestWorkspaceAsync(markup, languageName, TestExportProvider.CreateExportProviderWithCSharpAndVisualBasic());
+            return new RenameTrackingTestState(workspace, languageName, onBeforeGlobalSymbolRenamedReturnValue, onAfterGlobalSymbolRenamedReturnValue);
+        }
+
+        public RenameTrackingTestState(
+            TestWorkspace workspace,
+            string languageName,
+            bool onBeforeGlobalSymbolRenamedReturnValue = true,
+            bool onAfterGlobalSymbolRenamedReturnValue = true)
+        {
+            this.Workspace = workspace;
 
             _hostDocument = Workspace.Documents.First();
             _view = _hostDocument.GetTextView();
@@ -104,7 +115,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.RenameTracking
             }
         }
 
-        private static TestWorkspace CreateTestWorkspace(string code, string languageName, ExportProvider exportProvider = null)
+        private static Task<TestWorkspace> CreateTestWorkspaceAsync(string code, string languageName, ExportProvider exportProvider = null)
         {
             var xml = string.Format(@"
 <Workspace>
@@ -113,7 +124,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.RenameTracking
     </Project>
 </Workspace>", languageName, code);
 
-            return TestWorkspaceFactory.CreateWorkspace(xml, exportProvider: exportProvider);
+            return TestWorkspace.CreateAsync(xml, exportProvider: exportProvider);
         }
 
         public void SendEscape()
@@ -139,25 +150,26 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.RenameTracking
             history.Redo(count);
         }
 
-        public void AssertNoTag()
+        public async Task AssertNoTag()
         {
-            WaitForAsyncOperations();
+            await WaitForAsyncOperationsAsync();
 
             var tags = _tagger.GetTags(_view.TextBuffer.CurrentSnapshot.GetSnapshotSpanCollection());
 
             Assert.Equal(0, tags.Count());
         }
 
-        public IList<Diagnostic> GetDocumentDiagnostics(Document document = null)
+        public async Task<IList<Diagnostic>> GetDocumentDiagnosticsAsync(Document document = null)
         {
             document = document ?? this.Workspace.CurrentSolution.GetDocument(_hostDocument.Id);
             var analyzer = new RenameTrackingDiagnosticAnalyzer();
-            return DiagnosticProviderTestUtilities.GetDocumentDiagnostics(analyzer, document, document.GetSyntaxRootAsync(CancellationToken.None).Result.FullSpan).ToList();
+            return (await DiagnosticProviderTestUtilities.GetDocumentDiagnosticsAsync(analyzer, document, 
+                (await document.GetSyntaxRootAsync()).FullSpan)).ToList();
         }
 
-        public void AssertTag(string expectedFromName, string expectedToName, bool invokeAction = false)
+        public async Task AssertTag(string expectedFromName, string expectedToName, bool invokeAction = false)
         {
-            WaitForAsyncOperations();
+            await WaitForAsyncOperationsAsync();
 
             var tags = _tagger.GetTags(_view.TextBuffer.CurrentSnapshot.GetSnapshotSpanCollection());
 
@@ -167,7 +179,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.RenameTracking
             var tag = tags.Single();
 
             var document = this.Workspace.CurrentSolution.GetDocument(_hostDocument.Id);
-            var diagnostics = GetDocumentDiagnostics(document);
+            var diagnostics = await GetDocumentDiagnosticsAsync(document);
 
             // There should be a single rename tracking diagnostic
             Assert.Equal(1, diagnostics.Count);
@@ -175,7 +187,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.RenameTracking
 
             var actions = new List<CodeAction>();
             var context = new CodeFixContext(document, diagnostics[0], (a, d) => actions.Add(a), CancellationToken.None);
-            _codeFixProvider.RegisterCodeFixesAsync(context).Wait();
+            await _codeFixProvider.RegisterCodeFixesAsync(context);
 
             // There should only be one code action
             Assert.Equal(1, actions.Count);
@@ -184,11 +196,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.RenameTracking
 
             if (invokeAction)
             {
-                var operations = actions[0]
-                    .GetOperationsAsync(CancellationToken.None)
-                    .WaitAndGetResult(CancellationToken.None)
-                    .ToArray();
-
+                var operations = (await actions[0].GetOperationsAsync(CancellationToken.None)).ToArray();
                 Assert.Equal(1, operations.Length);
 
                 operations[0].Apply(this.Workspace, CancellationToken.None);
@@ -205,11 +213,10 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.RenameTracking
             Assert.NotNull(_notificationMessage);
         }
 
-        private void WaitForAsyncOperations()
+        private async Task WaitForAsyncOperationsAsync()
         {
             var waiters = Workspace.ExportProvider.GetExportedValues<IAsynchronousOperationWaiter>();
-            var tasks = waiters.Select(w => w.CreateWaitTask()).ToList();
-            tasks.PumpingWaitAll();
+            await waiters.WaitAllAsync();
         }
 
         public void Dispose()

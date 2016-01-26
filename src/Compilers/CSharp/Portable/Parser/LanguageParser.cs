@@ -12,21 +12,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
 {
     internal partial class LanguageParser : SyntaxParser
     {
-        // Keep this value in sync with Parser.vb
-        //
-        // This number is meant to represent the minimum depth which is necessary for a parser implementation
-        // to function.  Anything less than this represents an environment where a sufficiently complex C# 
-        // program could not be compiled.  The following factors went into choosing this number 
-        //
-        //  1. The Task<T> implementation has a similar problem with unbounded recursion and came to similar
-        //     conclusions on how to prevent such a problem (major difference is they use a hand rolled
-        //     implementation of ensureSufficientExecutionStack).  They settled on 20 as a minimum 
-        //     expectation 
-        //  2. A modified version of the parser was run on the Roslyn source base and the maximum depth 
-        //     discovered was 7.  Having 20 as a minimum seems reasonable in that context 
-        //
-        internal const int MaxUncheckedRecursionDepth = 20;
-
         // list pools - allocators for lists that are used to build sequences of nodes. The lists
         // can be reused (hence pooled) since the syntax factory methods don't keep references to
         // them
@@ -414,9 +399,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
             {
                 return parseFunc();
             }
-            // TODO (DevDiv workitem 966425): Replace exception name test with a type test once the type 
-            // is available in the PCL
-            catch (Exception ex) when (ex.GetType().Name == "InsufficientExecutionStackException")
+            catch (Exception ex) when (StackGuard.IsInsufficientExecutionStackException(ex))
             {
                 return CreateForGlobalFailure(lexer.TextWindow.Position, createEmptyNodeFunc());
             }
@@ -445,7 +428,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
             Debug.Assert(this.CurrentToken.Kind == SyntaxKind.NamespaceKeyword);
             var namespaceToken = this.EatToken(SyntaxKind.NamespaceKeyword);
 
-            if (IsScript || IsInteractive)
+            if (IsScript)
             {
                 namespaceToken = this.AddError(namespaceToken, ErrorCode.ERR_NamespaceNotAllowedInScript);
             }
@@ -4702,10 +4685,13 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
                 // Console->WriteLine();
                 //
                 // C 
-                // A + B; // etc.
+                // A + B;
                 //
                 // C 
                 // A ? B : D;
+                //
+                // C 
+                // A()
                 var resetPoint = this.GetResetPoint();
                 try
                 {
@@ -4726,6 +4712,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
                                 SyntaxFacts.IsBinaryExpressionOperatorToken(currentTokenKind);
 
                             if (currentTokenKind == SyntaxKind.DotToken ||
+                                currentTokenKind == SyntaxKind.OpenParenToken ||
                                 currentTokenKind == SyntaxKind.MinusGreaterThanToken ||
                                 isNonEqualsBinaryToken)
                             {
@@ -5590,6 +5577,35 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
 
                 var result = this.ParseType(parentIsParameter: false);
 
+                // Consider the case where someone supplies an invalid type argument
+                // Such as Action<0> or Action<static>.  In this case we generate a missing 
+                // identifer in ParseType, but if we continue as is we'll immediately start to 
+                // interpret 0 as the start of a new expression when we can tell it's most likely
+                // meant to be part of the type list.  
+                //
+                // To solve this we check if the current token is not comma or greater than and 
+                // the next token is a comma or greater than. If so we assume that the found 
+                // token is part of this expression and we attempt to recover. This does open 
+                // the door for cases where we have an  incomplete line to be interpretted as 
+                // a single expression.  For example:
+                //
+                // Action< // Incomplete line
+                // a>b;
+                //
+                // However, this only happens when the following expression is of the form a>... 
+                // or a,... which  means this case should happen less frequently than what we're 
+                // trying to solve here so we err on the side of better error messages
+                // for the majority of cases.
+                SyntaxKind nextTokenKind = SyntaxKind.None;
+
+                if (result.IsMissing &&
+                    (this.CurrentToken.Kind != SyntaxKind.CommaToken && this.CurrentToken.Kind != SyntaxKind.GreaterThanToken) && 
+                    ((nextTokenKind = this.PeekToken(1).Kind) == SyntaxKind.CommaToken || nextTokenKind == SyntaxKind.GreaterThanToken))
+                {
+                    // Eat the current token and add it as skipped so we recover
+                    result = AddTrailingSkippedSyntax(result, this.EatToken());
+                }
+
                 if (varianceToken != null)
                 {
                     result = AddLeadingSkippedSyntax(result, varianceToken);
@@ -6356,10 +6372,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
             try
             {
                 _recursionDepth++;
-                if (_recursionDepth > MaxUncheckedRecursionDepth)
-                {
-                    PortableShim.RuntimeHelpers.EnsureSufficientExecutionStack();
-                }
+                StackGuard.EnsureSufficientExecutionStack(_recursionDepth);
 
                 if (this.IsIncrementalAndFactoryContextMatches && this.CurrentNode is CSharp.Syntax.StatementSyntax)
                 {
@@ -6520,7 +6533,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
                     }
                     else if (this.IsQueryExpression(mayBeVariableDeclaration: true, mayBeMemberDeclaration: allowAnyExpression))
                     {
-                        return this.ParseExpressionStatement(this.ParseQueryExpression());
+                        return this.ParseExpressionStatement(this.ParseQueryExpression(0));
                     }
                     else
                     {
@@ -8015,6 +8028,11 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
                 {
                     mod = this.AddError(mod, ErrorCode.ERR_BadMemberFlag, mod.Text);
                 }
+                else if (list.Any(mod.Kind))
+                {
+                    // check for duplicates, can only be const
+                    mod = this.AddError(mod, ErrorCode.ERR_TypeExpected, mod.Text);
+                }
 
                 list.Add(mod);
             }
@@ -8042,7 +8060,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
         private ExpressionStatementSyntax ParseExpressionStatement(ExpressionSyntax expression)
         {
             SyntaxToken semicolon;
-            if (IsInteractive && this.CurrentToken.Kind == SyntaxKind.EndOfFileToken)
+            if (IsScript && this.CurrentToken.Kind == SyntaxKind.EndOfFileToken)
             {
                 semicolon = SyntaxFactory.MissingToken(SyntaxKind.SemicolonToken);
             }
@@ -8251,7 +8269,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
 
         private bool IsPossibleAwaitExpressionStatement()
         {
-            return (this.IsInteractive || this.IsInAsync) && this.CurrentToken.ContextualKind == SyntaxKind.AwaitKeyword;
+            return (this.IsScript || this.IsInAsync) && this.CurrentToken.ContextualKind == SyntaxKind.AwaitKeyword;
         }
 
         private bool IsAwaitExpression()
@@ -8301,10 +8319,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
         {
             _recursionDepth++;
 
-            if (_recursionDepth > MaxUncheckedRecursionDepth)
-            {
-                PortableShim.RuntimeHelpers.EnsureSufficientExecutionStack();
-            }
+            StackGuard.EnsureSufficientExecutionStack(_recursionDepth);
 
             var result = ParseSubExpressionCore(precedence);
 
@@ -8353,7 +8368,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
             }
             else if (this.IsQueryExpression(mayBeVariableDeclaration: false, mayBeMemberDeclaration: false))
             {
-                leftOperand = this.ParseQueryExpression();
+                leftOperand = this.ParseQueryExpression(precedence);
             }
             else if (this.CurrentToken.ContextualKind == SyntaxKind.FromKeyword && IsInQuery)
             {
@@ -8471,10 +8486,10 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
             {
                 var questionToken = this.EatToken();
 
-                var colonLeft = this.ParseSubExpression(nullCoalescingPrecedence - 1);
+                var colonLeft = this.ParseExpressionCore();
                 var colon = this.EatToken(SyntaxKind.ColonToken);
 
-                var colonRight = this.ParseSubExpression(nullCoalescingPrecedence - 1);
+                var colonRight = this.ParseExpressionCore();
                 leftOperand = _syntaxFactory.ConditionalExpression(leftOperand, questionToken, colonLeft, colon, colonRight);
             }
 
@@ -10216,11 +10231,16 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
             return false;
         }
 
-        private QueryExpressionSyntax ParseQueryExpression()
+        private QueryExpressionSyntax ParseQueryExpression(uint precedence)
         {
             this.EnterQuery();
             var fc = this.ParseFromClause();
             fc = CheckFeatureAvailability(fc, MessageID.IDS_FeatureQueryExpression);
+            if (precedence > 1 && IsStrict)
+            {
+                fc = this.AddError(fc, ErrorCode.ERR_InvalidExprTerm, SyntaxFacts.GetText(SyntaxKind.FromKeyword));
+            }
+
             var body = this.ParseQueryBody();
             this.LeaveQuery();
             return _syntaxFactory.QueryExpression(fc, body);
@@ -10462,6 +10482,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
             var body = this.ParseQueryBody();
             return _syntaxFactory.QueryContinuation(@into, name, body);
         }
+
+        private bool IsStrict => this.Options.Features.ContainsKey("strict");
 
         [Obsolete("Use IsIncrementalAndFactoryContextMatches")]
         private new bool IsIncremental

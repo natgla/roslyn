@@ -1,5 +1,6 @@
 ' Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
+Imports System.Threading.Tasks
 Imports Microsoft.CodeAnalysis
 Imports Microsoft.CodeAnalysis.Completion
 Imports Microsoft.CodeAnalysis.Editor.UnitTests.IntelliSense
@@ -16,67 +17,67 @@ Class Foo
     $$
 End Class]]></document>
 
-        <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
-        Public Sub SnippetExpansionNoteAddedToDescription_ExactMatch()
+        <WpfFact, Trait(Traits.Feature, Traits.Features.Completion)>
+        Public Async Function SnippetExpansionNoteAddedToDescription_ExactMatch() As Task
             Using state = CreateVisualBasicSnippetExpansionNoteTestState(_markup, "Interface")
                 state.SendTypeChars("Interfac")
-                state.AssertCompletionSession()
-                state.AssertSelectedCompletionItem(description:=String.Format(FeaturesResources.Keyword, "Interface") & vbCrLf &
+                Await state.AssertCompletionSession()
+                Await state.AssertSelectedCompletionItem(description:=String.Format(FeaturesResources.Keyword, "Interface") & vbCrLf &
                     VBFeaturesResources.InterfaceKeywordToolTip & vbCrLf &
                     String.Format(FeaturesResources.NoteTabTwiceToInsertTheSnippet, "Interface"))
             End Using
-        End Sub
+        End Function
 
-        <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
-        Public Sub SnippetExpansionNoteAddedToDescription_DifferentSnippetShortcutCasing()
+        <WpfFact, Trait(Traits.Feature, Traits.Features.Completion)>
+        Public Async Function SnippetExpansionNoteAddedToDescription_DifferentSnippetShortcutCasing() As Task
             Using state = CreateVisualBasicSnippetExpansionNoteTestState(_markup, "intErfaCE")
                 state.SendTypeChars("Interfac")
-                state.AssertCompletionSession()
-                state.AssertSelectedCompletionItem(description:=String.Format(FeaturesResources.Keyword, "Interface") & vbCrLf &
+                Await state.AssertCompletionSession()
+                Await state.AssertSelectedCompletionItem(description:=String.Format(FeaturesResources.Keyword, "Interface") & vbCrLf &
                     VBFeaturesResources.InterfaceKeywordToolTip & vbCrLf &
                     String.Format(FeaturesResources.NoteTabTwiceToInsertTheSnippet, "Interface"))
             End Using
-        End Sub
+        End Function
 
-        <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
-        Public Sub SnippetExpansionNoteNotAddedToDescription_ShortcutIsProperSubstringOfInsertedText()
+        <WpfFact, Trait(Traits.Feature, Traits.Features.Completion)>
+        Public Async Function SnippetExpansionNoteNotAddedToDescription_ShortcutIsProperSubstringOfInsertedText() As Task
             Using state = CreateVisualBasicSnippetExpansionNoteTestState(_markup, "Interfac")
                 state.SendTypeChars("Interfac")
-                state.AssertCompletionSession()
-                state.AssertSelectedCompletionItem(description:=String.Format(FeaturesResources.Keyword, "Interface") & vbCrLf &
+                Await state.AssertCompletionSession()
+                Await state.AssertSelectedCompletionItem(description:=String.Format(FeaturesResources.Keyword, "Interface") & vbCrLf &
                     VBFeaturesResources.InterfaceKeywordToolTip)
             End Using
-        End Sub
+        End Function
 
-        <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
-        Public Sub SnippetExpansionNoteNotAddedToDescription_ShortcutIsProperSuperstringOfInsertedText()
+        <WpfFact, Trait(Traits.Feature, Traits.Features.Completion)>
+        Public Async Function SnippetExpansionNoteNotAddedToDescription_ShortcutIsProperSuperstringOfInsertedText() As Task
             Using state = CreateVisualBasicSnippetExpansionNoteTestState(_markup, "Interfaces")
                 state.SendTypeChars("Interfac")
-                state.AssertCompletionSession()
-                state.AssertSelectedCompletionItem(description:=String.Format(FeaturesResources.Keyword, "Interface") & vbCrLf &
+                Await state.AssertCompletionSession()
+                Await state.AssertSelectedCompletionItem(description:=String.Format(FeaturesResources.Keyword, "Interface") & vbCrLf &
                     VBFeaturesResources.InterfaceKeywordToolTip)
             End Using
-        End Sub
+        End Function
 
-        <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
-        Public Sub SnippetExpansionNoteNotAddedToDescription_DisplayTextMatchesShortcutButInsertionTextDoesNot()
+        <WpfFact, Trait(Traits.Feature, Traits.Features.Completion)>
+        Public Async Function SnippetExpansionNoteNotAddedToDescription_DisplayTextMatchesShortcutButInsertionTextDoesNot() As Task
             Using state = CreateVisualBasicSnippetExpansionNoteTestState(_markup, "DisplayText")
 
                 state.SendTypeChars("DisplayTex")
-                state.AssertCompletionSession()
-                state.AssertSelectedCompletionItem(description:="")
+                Await state.AssertCompletionSession()
+                Await state.AssertSelectedCompletionItem(description:="")
             End Using
-        End Sub
+        End Function
 
-        <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
-        Public Sub SnippetExpansionNoteAddedToDescription_DisplayTextDoesNotMatchShortcutButInsertionTextDoes()
+        <WpfFact, Trait(Traits.Feature, Traits.Features.Completion)>
+        Public Async Function SnippetExpansionNoteAddedToDescription_DisplayTextDoesNotMatchShortcutButInsertionTextDoes() As Task
             Using state = CreateVisualBasicSnippetExpansionNoteTestState(_markup, "InsertionText")
 
                 state.SendTypeChars("DisplayTex")
-                state.AssertCompletionSession()
-                state.AssertSelectedCompletionItem(description:=String.Format(FeaturesResources.NoteTabTwiceToInsertTheSnippet, "InsertionText"))
+                Await state.AssertCompletionSession()
+                Await state.AssertSelectedCompletionItem(description:=String.Format(FeaturesResources.NoteTabTwiceToInsertTheSnippet, "InsertionText"))
             End Using
-        End Sub
+        End Function
 
         Private Function CreateVisualBasicSnippetExpansionNoteTestState(xElement As XElement, ParamArray snippetShortcuts As String()) As TestState
             Dim state = TestState.CreateVisualBasicTestState(
@@ -87,7 +88,6 @@ End Class]]></document>
 
             Dim testSnippetInfoService = DirectCast(state.Workspace.Services.GetLanguageServices(LanguageNames.VisualBasic).GetService(Of ISnippetInfoService)(), TestVisualBasicSnippetInfoService)
             testSnippetInfoService.SetSnippetShortcuts(snippetShortcuts)
-
             Return state
         End Function
     End Class

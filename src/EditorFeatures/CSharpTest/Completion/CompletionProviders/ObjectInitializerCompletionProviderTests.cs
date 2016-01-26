@@ -2,6 +2,7 @@
 
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Completion;
 using Microsoft.CodeAnalysis.CSharp.Completion.Providers;
 using Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces;
@@ -12,13 +13,17 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.UnitTests.Completion.CompletionPr
 {
     public class ObjectInitializerCompletionProviderTests : AbstractCSharpCompletionProviderTests
     {
+        public ObjectInitializerCompletionProviderTests(CSharpTestWorkspaceFixture workspaceFixture) : base(workspaceFixture)
+        {
+        }
+
         internal override CompletionListProvider CreateCompletionProvider()
         {
             return new ObjectInitializerCompletionProvider();
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void NothingToInitialize()
+        public async Task NothingToInitialize()
         {
             var markup = @"
 class c { }
@@ -31,12 +36,12 @@ class d
     }
 }";
 
-            VerifyNoItemsExist(markup);
-            VerifyExclusive(markup, true);
+            await VerifyNoItemsExistAsync(markup);
+            await VerifyExclusiveAsync(markup, true);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void OneItem1()
+        public async Task OneItem1()
         {
             var markup = @"
 class c { public int value {set; get; }}
@@ -49,13 +54,13 @@ class d
     }
 }";
 
-            VerifyItemExists(markup, "value");
-            VerifyItemIsAbsent(markup, "<value>k__BackingField");
-            VerifyExclusive(markup, true);
+            await VerifyItemExistsAsync(markup, "value");
+            await VerifyItemIsAbsentAsync(markup, "<value>k__BackingField");
+            await VerifyExclusiveAsync(markup, true);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void ShowWithEqualsSign()
+        public async Task ShowWithEqualsSign()
         {
             var markup = @"
 class c { public int value {set; get; }}
@@ -68,13 +73,13 @@ class d
     }
 }";
 
-            VerifyItemExists(markup, "value");
-            VerifyItemIsAbsent(markup, "<value>k__BackingField");
-            VerifyExclusive(markup, true);
+            await VerifyItemExistsAsync(markup, "value");
+            await VerifyItemIsAbsentAsync(markup, "<value>k__BackingField");
+            await VerifyExclusiveAsync(markup, true);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void OneItem2()
+        public async Task OneItem2()
         {
             var markup = @"
 class c
@@ -87,13 +92,13 @@ class c
     }
 }";
 
-            VerifyItemExists(markup, "value");
-            VerifyItemIsAbsent(markup, "<value>k__BackingField");
-            VerifyExclusive(markup, true);
+            await VerifyItemExistsAsync(markup, "value");
+            await VerifyItemIsAbsentAsync(markup, "<value>k__BackingField");
+            await VerifyExclusiveAsync(markup, true);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void FieldAndProperty()
+        public async Task FieldAndProperty()
         {
             var markup = @"
 class c 
@@ -110,13 +115,13 @@ class d
     }
 }";
 
-            VerifyItemExists(markup, "value");
-            VerifyItemExists(markup, "otherValue");
-            VerifyExclusive(markup, true);
+            await VerifyItemExistsAsync(markup, "value");
+            await VerifyItemExistsAsync(markup, "otherValue");
+            await VerifyExclusiveAsync(markup, true);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void HidePreviouslyTyped()
+        public async Task HidePreviouslyTyped()
         {
             var markup = @"
 class c 
@@ -133,13 +138,13 @@ class d
     }
 }";
 
-            VerifyItemIsAbsent(markup, "value");
-            VerifyExclusive(markup, true);
-            VerifyItemExists(markup, "otherValue");
+            await VerifyItemIsAbsentAsync(markup, "value");
+            await VerifyExclusiveAsync(markup, true);
+            await VerifyItemExistsAsync(markup, "otherValue");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void NotInEqualsValue()
+        public async Task NotInEqualsValue()
         {
             var markup = @"
 class c 
@@ -156,11 +161,11 @@ class d
     }
 }";
 
-            VerifyNoItemsExist(markup);
+            await VerifyNoItemsExistAsync(markup);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void NothingLeftToShow()
+        public async Task NothingLeftToShow()
         {
             var markup = @"
 class c 
@@ -177,12 +182,12 @@ class d
     }
 }";
 
-            VerifyNoItemsExist(markup);
-            VerifyExclusive(markup, true);
+            await VerifyNoItemsExistAsync(markup);
+            await VerifyExclusiveAsync(markup, true);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void NestedObjectInitializers()
+        public async Task NestedObjectInitializers()
         {
             var markup = @"
 class c 
@@ -203,14 +208,14 @@ class e
        d bar = new d { myValue = new c { $$
     }
 }";
-            VerifyItemIsAbsent(markup, "myValue");
-            VerifyItemExists(markup, "value");
-            VerifyItemExists(markup, "otherValue");
-            VerifyExclusive(markup, true);
+            await VerifyItemIsAbsentAsync(markup, "myValue");
+            await VerifyItemExistsAsync(markup, "value");
+            await VerifyItemExistsAsync(markup, "otherValue");
+            await VerifyExclusiveAsync(markup, true);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void NotExclusive1()
+        public async Task NotExclusive1()
         {
             var markup = @"using System.Collections.Generic;
 class c : IEnumerable<int>
@@ -227,11 +232,11 @@ class d
        c bar = new c { v$$
     }
 }";
-            VerifyExclusive(markup, false);
+            await VerifyExclusiveAsync(markup, false);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void NotExclusive2()
+        public async Task NotExclusive2()
         {
             var markup = @"using System.Collections;
 class c : IEnumerable
@@ -248,12 +253,12 @@ class d
        c bar = new c { v$$
     }
 }";
-            VerifyExclusive(markup, false);
+            await VerifyExclusiveAsync(markup, false);
         }
 
         [WorkItem(544242)]
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void NotInArgumentList()
+        public async Task NotInArgumentList()
         {
             var markup = @"class C
 {
@@ -263,12 +268,12 @@ class d
     }
 }
 ";
-            VerifyNoItemsExist(markup);
+            await VerifyNoItemsExistAsync(markup);
         }
 
         [WorkItem(530075)]
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void NotInArgumentList2()
+        public async Task NotInArgumentList2()
         {
             var markup = @"class C
 {
@@ -279,12 +284,12 @@ class d
     }
 }
 ";
-            VerifyNoItemsExist(markup);
+            await VerifyNoItemsExistAsync(markup);
         }
 
         [WorkItem(544289)]
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void DerivedMembers()
+        public async Task DerivedMembers()
         {
             var markup = @"using System;
 using System.Collections.Generic;
@@ -313,15 +318,15 @@ namespace ConsoleApplication1
     }
 }
 ";
-            VerifyItemExists(markup, "FooBase");
-            VerifyItemExists(markup, "FooDerived");
-            VerifyItemExists(markup, "BasePublic");
-            VerifyItemIsAbsent(markup, "BasePrivate");
+            await VerifyItemExistsAsync(markup, "FooBase");
+            await VerifyItemExistsAsync(markup, "FooDerived");
+            await VerifyItemExistsAsync(markup, "BasePublic");
+            await VerifyItemIsAbsentAsync(markup, "BasePrivate");
         }
 
         [WorkItem(544242)]
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void NotInCollectionInitializer()
+        public async Task NotInCollectionInitializer()
         {
             var markup = @"using System.Collections.Generic;
 class C
@@ -332,11 +337,11 @@ class C
     }
 }
 ";
-            VerifyNoItemsExist(markup);
+            await VerifyNoItemsExistAsync(markup);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void InitializeDerivedType()
+        public async Task InitializeDerivedType()
         {
             var markup = @"using System.Collections.Generic;
 
@@ -354,12 +359,12 @@ class C
     }
 }
 ";
-            VerifyItemExists(markup, "foo");
+            await VerifyItemExistsAsync(markup, "foo");
         }
 
         [WorkItem(544550)]
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void ReadOnlyPropertiesShouldNotBePresent()
+        public async Task ReadOnlyPropertiesShouldNotBePresent()
         {
             var markup = @"using System.Collections.Generic;
 class C
@@ -371,13 +376,13 @@ class C
 }
 ";
 
-            VerifyItemExists(markup, "Capacity");
-            VerifyItemIsAbsent(markup, "Count");
+            await VerifyItemExistsAsync(markup, "Capacity");
+            await VerifyItemIsAbsentAsync(markup, "Count");
         }
 
         [WorkItem(544550)]
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void IndexersShouldNotBePresent()
+        public async Task IndexersShouldNotBePresent()
         {
             var markup = @"using System.Collections.Generic;
 class C
@@ -389,12 +394,12 @@ class C
 }
 ";
 
-            VerifyItemExists(markup, "Capacity");
-            VerifyItemIsAbsent(markup, "this[]");
+            await VerifyItemExistsAsync(markup, "Capacity");
+            await VerifyItemIsAbsentAsync(markup, "this[]");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void ReadOnlyPropertiesThatFollowTheCollectionPatternShouldBePresent()
+        public async Task ReadOnlyPropertiesThatFollowTheCollectionPatternShouldBePresent()
         {
             var markup = @"using System.Collections.Generic;
 class C
@@ -409,13 +414,13 @@ class C
 }
 ";
 
-            VerifyItemIsAbsent(markup, "foo");
-            VerifyItemExists(markup, "bar");
+            await VerifyItemIsAbsentAsync(markup, "foo");
+            await VerifyItemExistsAsync(markup, "bar");
         }
 
         [WorkItem(544607)]
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void DoNotIncludeStaticMember()
+        public async Task DoNotIncludeStaticMember()
         {
             var markup = @"
 class Foo
@@ -431,13 +436,13 @@ class Bar
     }
 }";
 
-            VerifyItemIsAbsent(markup, "Gibberish");
+            await VerifyItemIsAbsentAsync(markup, "Gibberish");
         }
 
         [Fact]
         [WorkItem(545678)]
         [Trait(Traits.Feature, Traits.Features.Completion)]
-        public void EditorBrowsable_PropertyInObjectCreationAlways()
+        public async Task EditorBrowsable_PropertyInObjectCreationAlways()
         {
             var markup = @"
 public class C
@@ -454,7 +459,7 @@ public class Foo
     public string Prop { get; set; }
 }";
 
-            VerifyItemInEditorBrowsableContexts(
+            await VerifyItemInEditorBrowsableContextsAsync(
                 markup: markup,
                 referencedCode: referencedCode,
                 item: "Prop",
@@ -467,7 +472,7 @@ public class Foo
         [Fact]
         [WorkItem(545678)]
         [Trait(Traits.Feature, Traits.Features.Completion)]
-        public void EditorBrowsable_PropertyInObjectCreationNever()
+        public async Task EditorBrowsable_PropertyInObjectCreationNever()
         {
             var markup = @"
 public class C
@@ -483,7 +488,7 @@ public class Foo
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     public string Prop { get; set; }
 }";
-            VerifyItemInEditorBrowsableContexts(
+            await VerifyItemInEditorBrowsableContextsAsync(
                 markup: markup,
                 referencedCode: referencedCode,
                 item: "Prop",
@@ -496,7 +501,7 @@ public class Foo
         [Fact]
         [WorkItem(545678)]
         [Trait(Traits.Feature, Traits.Features.Completion)]
-        public void EditorBrowsable_PropertyInObjectCreationAdvanced()
+        public async Task EditorBrowsable_PropertyInObjectCreationAdvanced()
         {
             var markup = @"
 public class C
@@ -512,7 +517,7 @@ public class Foo
     [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
     public string Prop { get; set; }
 }";
-            VerifyItemInEditorBrowsableContexts(
+            await VerifyItemInEditorBrowsableContextsAsync(
                 markup: markup,
                 referencedCode: referencedCode,
                 item: "Prop",
@@ -522,7 +527,7 @@ public class Foo
                 referencedLanguage: LanguageNames.CSharp,
                 hideAdvancedMembers: true);
 
-            VerifyItemInEditorBrowsableContexts(
+            await VerifyItemInEditorBrowsableContextsAsync(
                 markup: markup,
                 referencedCode: referencedCode,
                 item: "Prop",
@@ -534,7 +539,7 @@ public class Foo
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void TestCommitCharacter()
+        public async Task TestCommitCharacter()
         {
             const string markup = @"
 class c { public int value {set; get; }}
@@ -547,11 +552,11 @@ class d
     }
 }";
 
-            VerifyCommonCommitCharacters(markup, textTypedSoFar: "v");
+            await VerifyCommonCommitCharactersAsync(markup, textTypedSoFar: "v");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void TestEnter()
+        public async Task TestEnter()
         {
             const string markup = @"
 class c { public int value {set; get; }}
@@ -564,14 +569,14 @@ class d
     }
 }";
 
-            using (var workspace = CSharpWorkspaceFactory.CreateWorkspaceFromFile(markup))
+            using (var workspace = await TestWorkspace.CreateCSharpAsync(markup))
             {
                 var hostDocument = workspace.Documents.Single();
                 var position = hostDocument.CursorPosition.Value;
                 var document = workspace.CurrentSolution.GetDocument(hostDocument.Id);
                 var triggerInfo = CompletionTriggerInfo.CreateTypeCharTriggerInfo('a');
 
-                var completionList = GetCompletionList(document, position, triggerInfo);
+                var completionList = await GetCompletionListAsync(document, position, triggerInfo);
                 var item = completionList.Items.First();
 
                 var completionService = document.Project.LanguageServices.GetService<ICompletionService>();
@@ -582,14 +587,14 @@ class d
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void TestTrigger()
+        public async Task TestTrigger()
         {
-            TestCommonIsTextualTriggerCharacter();
+            await TestCommonIsTextualTriggerCharacterAsync();
         }
 
         [WorkItem(530828)]
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void DoNotIncludeIndexedPropertyWithNonOptionalParameter()
+        public async Task DoNotIncludeIndexedPropertyWithNonOptionalParameter()
         {
             var markup = @"C c01 = new C() {$$ }";
             var referencedCode = @"Public Class C
@@ -601,7 +606,7 @@ class d
         End Set
     End Property
 End Class";
-            VerifyItemInEditorBrowsableContexts(
+            await VerifyItemInEditorBrowsableContextsAsync(
                 markup: markup,
                 referencedCode: referencedCode,
                 item: "IndexProp",
@@ -612,16 +617,142 @@ End Class";
                 hideAdvancedMembers: false);
         }
 
-        private void VerifyExclusive(string markup, bool exclusive)
+        [WorkItem(4754, "https://github.com/dotnet/roslyn/issues/4754")]
+        [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
+        public async Task CollectionInitializerPatternFromBaseType()
         {
-            using (var workspace = CSharpWorkspaceFactory.CreateWorkspaceFromFile(markup))
+            var markup = @"
+using System;
+using System.Collections;
+
+public class SupportsAdd : IEnumerable
+{
+    public void Add(int x) { }
+
+    public IEnumerator GetEnumerator()
+    {
+        throw new NotImplementedException();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        throw new NotImplementedException();
+    }
+}
+
+class SupportsAddDerived : SupportsAdd { }
+
+class Container
+{
+    public SupportsAdd S { get; }
+    public SupportsAddDerived D { get; }
+}
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        var y = new Container { $$ };
+    }
+}";
+
+            await VerifyItemExistsAsync(markup, "S");
+            await VerifyItemExistsAsync(markup, "D");
+        }
+
+        [WorkItem(4754, "https://github.com/dotnet/roslyn/issues/4754")]
+        [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
+        public async Task CollectionInitializerPatternFromBaseTypeInaccessible()
+        {
+            var markup = @"
+using System;
+using System.Collections;
+
+public class SupportsAdd : IEnumerable
+{
+    protected void Add(int x) { }
+
+    public IEnumerator GetEnumerator()
+    {
+        throw new NotImplementedException();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        throw new NotImplementedException();
+    }
+}
+
+class SupportsAddDerived : SupportsAdd { }
+
+class Container
+{
+    public SupportsAdd S { get; }
+    public SupportsAddDerived D { get; }
+}
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        var y = new Container { $$ };
+    }
+}";
+
+            await VerifyItemIsAbsentAsync(markup, "S");
+            await VerifyItemIsAbsentAsync(markup, "D");
+        }
+
+        [WorkItem(4754, "https://github.com/dotnet/roslyn/issues/4754")]
+        [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
+        public async Task CollectionInitializerPatternFromBaseTypeAccessible()
+        {
+            var markup = @"
+using System;
+using System.Collections;
+
+public class SupportsAdd : IEnumerable
+{
+    protected void Add(int x) { }
+
+    public IEnumerator GetEnumerator()
+    {
+        throw new NotImplementedException();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        throw new NotImplementedException();
+    }
+}
+
+class SupportsAddDerived : SupportsAdd 
+{ 
+class Container
+{
+    public SupportsAdd S { get; }
+    public SupportsAddDerived D { get; }
+}
+    static void Main(string[] args)
+    {
+        var y = new Container { $$ };
+    }
+}";
+
+            await VerifyItemExistsAsync(markup, "S");
+            await VerifyItemExistsAsync(markup, "D");
+        }
+
+        private async Task VerifyExclusiveAsync(string markup, bool exclusive)
+        {
+            using (var workspace = await TestWorkspace.CreateCSharpAsync(markup))
             {
                 var hostDocument = workspace.Documents.Single();
                 var position = hostDocument.CursorPosition.Value;
                 var document = workspace.CurrentSolution.GetDocument(hostDocument.Id);
                 var triggerInfo = CompletionTriggerInfo.CreateTypeCharTriggerInfo('a');
 
-                var completionList = GetCompletionList(document, position, triggerInfo);
+                var completionList = await GetCompletionListAsync(document, position, triggerInfo);
 
                 if (completionList != null)
                 {

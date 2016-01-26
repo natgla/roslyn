@@ -385,7 +385,7 @@ namespace NS
             Assert.Null(ResolveSymbol(typeSym02, comp2, comp1, SymbolKeyComparison.CaseSensitive));
         }
 
-        [Fact(Skip = "530169"), WorkItem(530169)]
+        [WpfFact(Skip = "530169"), WorkItem(530169)]
         public void C2CAssemblyChanged02()
         {
             var src = @"[assembly: System.Reflection.AssemblyVersion(""1.2.3.4"")] public class C {}";

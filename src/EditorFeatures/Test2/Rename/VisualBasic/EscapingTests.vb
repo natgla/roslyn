@@ -565,7 +565,7 @@ End Module
             End Using
         End Sub
 
-        <Fact(Skip:="668158"), Trait(Traits.Feature, Traits.Features.Rename)>
+        <WpfFact(Skip:="668158"), Trait(Traits.Feature, Traits.Features.Rename)>
         Public Sub RenameIdentifierBracketed()
             Using result = RenameEngineResult.Create(
                     <Workspace>

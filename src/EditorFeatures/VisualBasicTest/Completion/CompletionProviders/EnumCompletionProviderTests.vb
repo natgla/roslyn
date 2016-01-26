@@ -1,16 +1,22 @@
 ' Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
+Imports System.Threading.Tasks
 Imports Microsoft.CodeAnalysis.Completion
+Imports Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
 Imports Microsoft.CodeAnalysis.VisualBasic.Completion.Providers
 
 Namespace Microsoft.CodeAnalysis.Editor.VisualBasic.UnitTests.Completion.CompletionProviders
     Public Class EnumCompletionProviderTests
         Inherits AbstractVisualBasicCompletionProviderTests
 
+        Public Sub New(workspaceFixture As VisualBasicTestWorkspaceFixture)
+            MyBase.New(workspaceFixture)
+        End Sub
+
         <Fact>
         <WorkItem(545678)>
         <Trait(Traits.Feature, Traits.Features.Completion)>
-        Public Sub EditorBrowsable_EnumTypeDotMemberAlways()
+        Public Async Function TestEditorBrowsable_EnumTypeDotMemberAlways() As Task
             Dim markup = <Text><![CDATA[
 Class P
     Sub S()
@@ -23,7 +29,7 @@ Public Enum MyEnum
     <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Always)> Member
 End Enum
 ]]></Text>.Value
-            VerifyItemInEditorBrowsableContexts(
+            Await VerifyItemInEditorBrowsableContextsAsync(
                 markup:=markup,
                 referencedCode:=referencedCode,
                 item:="MyEnum.Member",
@@ -31,12 +37,12 @@ End Enum
                 expectedSymbolsMetadataReference:=1,
                 sourceLanguage:=LanguageNames.VisualBasic,
                 referencedLanguage:=LanguageNames.VisualBasic)
-        End Sub
+        End Function
 
         <Fact>
         <WorkItem(545678)>
         <Trait(Traits.Feature, Traits.Features.Completion)>
-        Public Sub EditorBrowsable_EnumTypeDotMemberNever()
+        Public Async Function TestEditorBrowsable_EnumTypeDotMemberNever() As Task
             Dim markup = <Text><![CDATA[
 Class P
     Sub S()
@@ -49,7 +55,7 @@ Public Enum MyEnum
     <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)> Member
 End Enum
 ]]></Text>.Value
-            VerifyItemInEditorBrowsableContexts(
+            Await VerifyItemInEditorBrowsableContextsAsync(
                 markup:=markup,
                 referencedCode:=referencedCode,
                 item:="MyEnum.Member",
@@ -57,12 +63,12 @@ End Enum
                 expectedSymbolsMetadataReference:=0,
                 sourceLanguage:=LanguageNames.VisualBasic,
                 referencedLanguage:=LanguageNames.VisualBasic)
-        End Sub
+        End Function
 
         <Fact>
         <WorkItem(545678)>
         <Trait(Traits.Feature, Traits.Features.Completion)>
-        Public Sub EditorBrowsable_EnumTypeDotMemberAdvanced()
+        Public Async Function TestEditorBrowsable_EnumTypeDotMemberAdvanced() As Task
             Dim markup = <Text><![CDATA[
 Class P
     Sub S()
@@ -75,7 +81,7 @@ Public Enum MyEnum
     <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)> Member
 End Enum
 ]]></Text>.Value
-            VerifyItemInEditorBrowsableContexts(
+            Await VerifyItemInEditorBrowsableContextsAsync(
                 markup:=markup,
                 referencedCode:=referencedCode,
                 item:="MyEnum.Member",
@@ -85,7 +91,7 @@ End Enum
                 referencedLanguage:=LanguageNames.VisualBasic,
                 hideAdvancedMembers:=True)
 
-            VerifyItemInEditorBrowsableContexts(
+            Await VerifyItemInEditorBrowsableContextsAsync(
                 markup:=markup,
                 referencedCode:=referencedCode,
                 item:="MyEnum.Member",
@@ -94,12 +100,12 @@ End Enum
                 sourceLanguage:=LanguageNames.VisualBasic,
                 referencedLanguage:=LanguageNames.VisualBasic,
                 hideAdvancedMembers:=False)
-        End Sub
+        End Function
 
         <Fact>
         <WorkItem(566787)>
         <Trait(Traits.Feature, Traits.Features.Completion)>
-        Public Sub TriggeredOnOpenParen()
+        Public Async Function TestTriggeredOnOpenParen() As Task
             Dim markup = <Text><![CDATA[
 Module Program
     Sub Main(args As String())
@@ -118,13 +124,13 @@ Enum Foo
 End
 ]]></Text>.Value
 
-            VerifyItemExists(markup, "Foo.AMember", usePreviousCharAsTrigger:=True)
-        End Sub
+            Await VerifyItemExistsAsync(markup, "Foo.AMember", usePreviousCharAsTrigger:=True)
+        End Function
 
         <Fact>
         <WorkItem(674390)>
         <Trait(Traits.Feature, Traits.Features.Completion)>
-        Public Sub RightSideOfAssignment()
+        Public Async Function TestRightSideOfAssignment() As Task
             Dim markup = <Text><![CDATA[
 Module Program
     Sub Main(args As String())
@@ -140,13 +146,13 @@ Enum Foo
 End
 ]]></Text>.Value
 
-            VerifyItemExists(markup, "Foo.AMember", usePreviousCharAsTrigger:=True)
-        End Sub
+            Await VerifyItemExistsAsync(markup, "Foo.AMember", usePreviousCharAsTrigger:=True)
+        End Function
 
         <Fact>
         <WorkItem(530491)>
         <Trait(Traits.Feature, Traits.Features.Completion)>
-        Public Sub DoNotCrashInObjectInitializer()
+        Public Async Function TestDoNotCrashInObjectInitializer() As Task
             Dim markup = <Text><![CDATA[
 Module Program
     Sub Main(args As String())
@@ -166,13 +172,13 @@ Module Program
 End Module
 ]]></Text>.Value
 
-            VerifyNoItemsExist(markup)
-        End Sub
+            Await VerifyNoItemsExistAsync(markup)
+        End Function
 
         <Fact>
         <WorkItem(809332)>
         <Trait(Traits.Feature, Traits.Features.Completion)>
-        Public Sub CaseStatement()
+        Public Async Function TestCaseStatement() As Task
             Dim markup = <Text><![CDATA[
 Enum E
     A
@@ -192,13 +198,13 @@ Module Module1
 End Module
 ]]></Text>.Value
 
-            VerifyItemExists(markup, "E.A", usePreviousCharAsTrigger:=True)
-        End Sub
+            Await VerifyItemExistsAsync(markup, "E.A", usePreviousCharAsTrigger:=True)
+        End Function
 
         <Fact>
         <WorkItem(854099)>
         <Trait(Traits.Feature, Traits.Features.Completion)>
-        Public Sub NotInComment()
+        Public Async Function TestNotInComment() As Task
             Dim markup = <Text><![CDATA[
 Enum E
     A
@@ -218,12 +224,12 @@ Module Module1
 End Module
 ]]></Text>.Value
 
-            VerifyNoItemsExist(markup, usePreviousCharAsTrigger:=True)
-        End Sub
+            Await VerifyNoItemsExistAsync(markup, usePreviousCharAsTrigger:=True)
+        End Function
 
         <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
         <WorkItem(827897)>
-        Public Sub InYieldReturn()
+        Public Async Function TestInYieldReturn() As Task
             Dim markup = <Text><![CDATA[
 Imports System
 Imports System.Collections.Generic
@@ -235,12 +241,12 @@ Class C
 End Class
 ]]></Text>.Value
 
-            VerifyItemExists(markup, "DayOfWeek.Friday")
-        End Sub
+            Await VerifyItemExistsAsync(markup, "DayOfWeek.Friday")
+        End Function
 
         <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
         <WorkItem(827897)>
-        Public Sub InAsyncMethodReturnStatement()
+        Public Async Function TestInAsyncMethodReturnStatement() As Task
             Dim markup = <Text><![CDATA[
 Imports System
 Imports System.Threading.Tasks
@@ -253,12 +259,12 @@ Class C
 End Class
 ]]></Text>.Value
 
-            VerifyItemExists(markup, "DayOfWeek.Friday")
-        End Sub
+            Await VerifyItemExistsAsync(markup, "DayOfWeek.Friday")
+        End Function
 
         <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
         <WorkItem(900625)>
-        Public Sub InIndexedProperty()
+        Public Async Function TestInIndexedProperty() As Task
             Dim markup = <Text><![CDATA[
 Module Module1
 
@@ -288,12 +294,12 @@ Module Module1
 End Module
 ]]></Text>.Value
 
-            VerifyItemExists(markup, "MyEnum.flower")
-        End Sub
+            Await VerifyItemExistsAsync(markup, "MyEnum.flower")
+        End Function
 
         <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
         <WorkItem(916483)>
-        Public Sub FullyQualified()
+        Public Async Function TestFullyQualified() As Task
             Dim markup = <Text><![CDATA[
 Class C
     Public Sub M(day As System.DayOfWeek)
@@ -306,12 +312,12 @@ Class C
     End Enum
 End Class
 ]]></Text>.Value
-            VerifyItemExists(markup, "System.DayOfWeek.Friday")
-        End Sub
+            Await VerifyItemExistsAsync(markup, "System.DayOfWeek.Friday")
+        End Function
 
         <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
         <WorkItem(916467)>
-        Public Sub TriggeredForNamedArgument()
+        Public Async Function TestTriggeredForNamedArgument() As Task
             Dim markup = <Text><![CDATA[
 Class C
     Public Sub M(day As DayOfWeek)
@@ -324,12 +330,12 @@ Class C
     End Enum
 End Class
 ]]></Text>.Value
-            VerifyItemExists(markup, "DayOfWeek.A", usePreviousCharAsTrigger:=True)
-        End Sub
+            Await VerifyItemExistsAsync(markup, "DayOfWeek.A", usePreviousCharAsTrigger:=True)
+        End Function
 
         <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
         <WorkItem(916467)>
-        Public Sub NotTriggeredAfterAssignmentEquals()
+        Public Async Function TestNotTriggeredAfterAssignmentEquals() As Task
             Dim markup = <Text><![CDATA[
 Class C
     Public Sub M(day As DayOfWeek)
@@ -342,12 +348,12 @@ Class C
     End Enum
 End Class
 ]]></Text>.Value
-            VerifyItemIsAbsent(markup, "DayOfWeek.A", usePreviousCharAsTrigger:=True)
-        End Sub
+            Await VerifyItemIsAbsentAsync(markup, "DayOfWeek.A", usePreviousCharAsTrigger:=True)
+        End Function
 
         <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
         <WorkItem(815963)>
-        Public Sub CaseStatementWithInt32InferredType()
+        Public Async Function TestCaseStatementWithInt32InferredType() As Task
             Dim markup = <Text><![CDATA[
 Class C
     Public Sub M(day As DayOfWeek)
@@ -363,13 +369,13 @@ Class C
     End Enum
 End Class
 ]]></Text>.Value
-            VerifyItemExists(markup, "DayOfWeek.A")
-            VerifyItemExists(markup, "DayOfWeek.B")
-        End Sub
+            Await VerifyItemExistsAsync(markup, "DayOfWeek.A")
+            Await VerifyItemExistsAsync(markup, "DayOfWeek.B")
+        End Function
 
         <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
         <WorkItem(815963)>
-        Public Sub NotInTrivia()
+        Public Async Function TestNotInTrivia() As Task
             Dim markup = <Text><![CDATA[
 Class C
     Public Sub M(day As DayOfWeek)
@@ -386,12 +392,12 @@ Class C
     End Enum
 End Class
 ]]></Text>.Value
-            VerifyNoItemsExist(markup)
-        End Sub
+            Await VerifyNoItemsExistAsync(markup)
+        End Function
 
         <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
         <WorkItem(815963)>
-        Public Sub LocalNoAs()
+        Public Async Function TestLocalNoAs() As Task
             Dim markup = <Text><![CDATA[
 Enum E
     A
@@ -403,13 +409,13 @@ Class C
     End Sub
 End Class
 ]]></Text>.Value
-            VerifyItemExists(markup, "e")
-            VerifyItemIsAbsent(markup, "e As E")
-        End Sub
+            Await VerifyItemExistsAsync(markup, "e")
+            Await VerifyItemIsAbsentAsync(markup, "e As E")
+        End Function
 
         <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
         <WorkItem(815963)>
-        Public Sub IncludeEnumAfterTyping()
+        Public Async Function TestIncludeEnumAfterTyping() As Task
             Dim markup = <Text><![CDATA[
 Enum E
     A
@@ -421,12 +427,12 @@ Class C
     End Sub
 End Class
 ]]></Text>.Value
-            VerifyItemExists(markup, "E")
-        End Sub
+            Await VerifyItemExistsAsync(markup, "E")
+        End Function
 
         <Fact, Trait(Traits.Feature, Traits.Features.Completion)>
         <WorkItem(1015797)>
-        Public Sub CommitOnComma()
+        Public Async Function TestCommitOnComma() As Task
             Dim markup = <Text><![CDATA[
 Enum E
     A
@@ -451,8 +457,8 @@ Class C
 End Class
 ]]></Text>.Value
 
-            VerifyProviderCommit(markup, "E.A", expected, ","c, textTypedSoFar:="")
-        End Sub
+            Await VerifyProviderCommitAsync(markup, "E.A", expected, ","c, textTypedSoFar:="")
+        End Function
 
         Friend Overrides Function CreateCompletionProvider() As CompletionListProvider
             Return New EnumCompletionProvider()

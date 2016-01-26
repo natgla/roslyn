@@ -19,11 +19,11 @@ Imports Roslyn.Test.Utilities
 Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.EditAndContinue
 
     Public Class VsReadOnlyDocumentTrackerTests
-        <Fact>
-        Public Sub StandardTextDocumentTest()
+        <WpfFact>
+        Public Async Function StandardTextDocumentTest() As Threading.Tasks.Task
             Dim diagnosticService As IDiagnosticAnalyzerService = New EditAndContinueTestHelper.TestDiagnosticAnalyzerService()
             Dim encService As IEditAndContinueWorkspaceService = New EditAndContinueWorkspaceService(diagnosticService)
-            Dim workspace = EditAndContinueTestHelper.CreateTestWorkspace()
+            Dim workspace = Await EditAndContinueTestHelper.CreateTestWorkspaceAsync()
             Dim currentSolution = workspace.CurrentSolution
             Dim project = currentSolution.Projects(0)
 
@@ -31,6 +31,7 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.EditAndContinue
             Assert.Equal(Of UInteger)(0, mockVsBuffer._oldFlags)
 
             Dim mockEditorAdaptersFactoryService = New VsEditorAdaptersFactoryServiceMock(mockVsBuffer)
+            WpfTestCase.RequireWpfFact($"{NameOf(VsReadOnlyDocumentTracker)} is thread affinitized")
             Dim readOnlyDocumentTracker As VsReadOnlyDocumentTracker
 
             Dim sessionReason As SessionReadOnlyReason
@@ -65,14 +66,14 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.EditAndContinue
             isReadOnly = encService.IsProjectReadOnly(project.Id, sessionReason, projectReason) AndAlso allowsReadOnly
             readOnlyDocumentTracker.SetReadOnly(project.DocumentIds.First(), isReadOnly)
             Assert.Equal(Of UInteger)(1, mockVsBuffer._oldFlags) ' Read-Only
-        End Sub
+        End Function
 
         <WorkItem(1089964, "DevDiv")>
-        <Fact>
-        Public Sub ContainedDocumentTest()
+        <WpfFact>
+        Public Async Function ContainedDocumentTest() As Threading.Tasks.Task
             Dim diagnosticService As IDiagnosticAnalyzerService = New EditAndContinueTestHelper.TestDiagnosticAnalyzerService()
             Dim encService As IEditAndContinueWorkspaceService = New EditAndContinueWorkspaceService(diagnosticService)
-            Dim workspace = EditAndContinueTestHelper.CreateTestWorkspace()
+            Dim workspace = Await EditAndContinueTestHelper.CreateTestWorkspaceAsync()
             Dim currentSolution = workspace.CurrentSolution
             Dim project = currentSolution.Projects(0)
 
@@ -114,14 +115,14 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.EditAndContinue
             isReadOnly = encService.IsProjectReadOnly(project.Id, sessionReason, projectReason) AndAlso allowsReadOnly
             readOnlyDocumentTracker.SetReadOnly(project.DocumentIds.First(), isReadOnly)
             Assert.Equal(Of UInteger)(0, mockVsBuffer._oldFlags) ' Editable
-        End Sub
+        End Function
 
         <WorkItem(1147868, "DevDiv")>
-        <Fact>
-        Public Sub InvalidDocumentTest1()
+        <WpfFact>
+        Public Async Function InvalidDocumentTest1() As Threading.Tasks.Task
             Dim diagnosticService As IDiagnosticAnalyzerService = New EditAndContinueTestHelper.TestDiagnosticAnalyzerService()
             Dim encService As IEditAndContinueWorkspaceService = New EditAndContinueWorkspaceService(diagnosticService)
-            Dim workspace = EditAndContinueTestHelper.CreateTestWorkspace()
+            Dim workspace = Await EditAndContinueTestHelper.CreateTestWorkspaceAsync()
             Dim currentSolution = workspace.CurrentSolution
             Dim project = currentSolution.Projects(0)
 
@@ -141,14 +142,14 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.EditAndContinue
 
             ' invalid documentId
             readOnlyDocumentTracker.SetReadOnly(Nothing, False) ' Check no NRE
-        End Sub
+        End Function
 
         <WorkItem(1147868, "DevDiv")>
-        <Fact>
-        Public Sub InvalidDocumentTest2()
+        <WpfFact>
+        Public Async Function InvalidDocumentTest2() As Threading.Tasks.Task
             Dim diagnosticService As IDiagnosticAnalyzerService = New EditAndContinueTestHelper.TestDiagnosticAnalyzerService()
             Dim encService As IEditAndContinueWorkspaceService = New EditAndContinueWorkspaceService(diagnosticService)
-            Dim workspace = EditAndContinueTestHelper.CreateTestWorkspace()
+            Dim workspace = Await EditAndContinueTestHelper.CreateTestWorkspaceAsync()
             Dim currentSolution = workspace.CurrentSolution
             Dim project = currentSolution.Projects(0)
 
@@ -169,7 +170,7 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.EditAndContinue
             ' the given project does not contain this document
             Dim newDocumentId = New DocumentId(New ProjectId(New Guid(), "TestProject"), New Guid(), "TestDoc")
             readOnlyDocumentTracker.SetReadOnly(newDocumentId, False) ' Check no NRE
-        End Sub
+        End Function
 
 #Region "Helper Methods"
 

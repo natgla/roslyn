@@ -1041,7 +1041,7 @@ struct S
         }
 
         [WorkItem(528571, "DevDiv")]
-        [Fact(Skip = "528571")]
+        [Fact]
         public void ConstraintsWithinStruct()
         {
             var source =
@@ -2521,15 +2521,20 @@ class C<T>
     void M<U>() where U : Z, A { }
 }";
             CreateCompilationWithMscorlib(source).VerifyDiagnostics(
-                // (4,15): error CS0246: The type or namespace name 'X' could not be found (are you missing a using directive or an assembly reference?)
-                Diagnostic(ErrorCode.ERR_SingleTypeNameNotFound, "X").WithArguments("X").WithLocation(4, 15),
-                // (5,15): error CS0246: The type or namespace name 'I<T>' could not be found (are you missing a using directive or an assembly reference?)
-                Diagnostic(ErrorCode.ERR_SingleTypeNameNotFound, "I<T>").WithArguments("I<T>").WithLocation(5, 15),
                 // (10,18): error CS0246: The type or namespace name 'Y' could not be found (are you missing a using directive or an assembly reference?)
+                //     where T : A, Y
                 Diagnostic(ErrorCode.ERR_SingleTypeNameNotFound, "Y").WithArguments("Y").WithLocation(10, 18),
+                // (4,15): error CS0246: The type or namespace name 'X' could not be found (are you missing a using directive or an assembly reference?)
+                //     where T : X
+                Diagnostic(ErrorCode.ERR_SingleTypeNameNotFound, "X").WithArguments("X").WithLocation(4, 15),
+                // (5,15): error CS0246: The type or namespace name 'I<>' could not be found (are you missing a using directive or an assembly reference?)
+                //     where U : I<T>
+                Diagnostic(ErrorCode.ERR_SingleTypeNameNotFound, "I<T>").WithArguments("I<>").WithLocation(5, 15),
                 // (13,27): error CS0246: The type or namespace name 'Z' could not be found (are you missing a using directive or an assembly reference?)
+                //     void M<U>() where U : Z, A { }
                 Diagnostic(ErrorCode.ERR_SingleTypeNameNotFound, "Z").WithArguments("Z").WithLocation(13, 27),
                 // (13,30): error CS0406: The class type constraint 'A' must come before any other constraints
+                //     void M<U>() where U : Z, A { }
                 Diagnostic(ErrorCode.ERR_ClassBoundNotFirst, "A").WithArguments("A").WithLocation(13, 30));
         }
 
@@ -6627,6 +6632,56 @@ class B : A<ValueType>, I<ValueType>
     void I<ValueType>.M<T>() { }
 }";
             CompileAndVerify(source);
+        }
+
+        [WorkItem(4097, "https://github.com/dotnet/roslyn/issues/4097")]
+        [Fact]
+        public void ObsoleteTypeInConstraints()
+        {
+            var source =
+@"
+[System.Obsolete]
+class Class1<T> where T : Class2
+{
+}
+
+[System.Obsolete]
+class Class2
+{
+}
+
+class Class3<T> where T : Class2
+{
+    [System.Obsolete]
+    void M1<S>() where S : Class2
+    {}   
+
+    void M2<S>() where S : Class2
+    {}   
+}
+
+partial class Class4
+{
+    [System.Obsolete]
+    partial void M3<S>() where S : Class2;
+}
+
+partial class Class4
+{
+    partial void M4<S>() where S : Class2;
+}
+";
+            CompileAndVerify(source, options: TestOptions.DebugDll).VerifyDiagnostics(
+    // (12,27): warning CS0612: 'Class2' is obsolete
+    // class Class3<T> where T : Class2
+    Diagnostic(ErrorCode.WRN_DeprecatedSymbol, "Class2").WithArguments("Class2").WithLocation(12, 27),
+    // (18,28): warning CS0612: 'Class2' is obsolete
+    //     void M2<S>() where S : Class2
+    Diagnostic(ErrorCode.WRN_DeprecatedSymbol, "Class2").WithArguments("Class2").WithLocation(18, 28),
+    // (30,36): warning CS0612: 'Class2' is obsolete
+    //     partial void M4<S>() where S : Class2;
+    Diagnostic(ErrorCode.WRN_DeprecatedSymbol, "Class2").WithArguments("Class2").WithLocation(30, 36)
+                );
         }
     }
 }

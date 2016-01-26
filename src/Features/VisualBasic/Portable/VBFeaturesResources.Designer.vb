@@ -71,6 +71,15 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.VBFeaturesResources
         End Property
         
         '''<summary>
+        '''  Looks up a localized string similar to Add Overloads.
+        '''</summary>
+        Friend ReadOnly Property AddOverloadsKeyword() As String
+            Get
+                Return ResourceManager.GetString("AddOverloadsKeyword", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
         '''  Looks up a localized string similar to Creates a delegate procedure instance that references the specified procedure.
         '''AddressOf &lt;procedureName&gt;.
         '''</summary>
@@ -2383,6 +2392,15 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.VBFeaturesResources
         Friend ReadOnly Property ReDimKeywordToolTip() As String
             Get
                 Return ResourceManager.GetString("ReDimKeywordToolTip", resourceCulture)
+            End Get
+        End Property
+        
+        '''<summary>
+        '''  Looks up a localized string similar to Add a metadata reference to specified assembly and all its dependencies, e.g. #r &quot;myLib.dll&quot;..
+        '''</summary>
+        Friend ReadOnly Property ReferenceKeywordTooltip() As String
+            Get
+                Return ResourceManager.GetString("ReferenceKeywordTooltip", resourceCulture)
             End Get
         End Property
         

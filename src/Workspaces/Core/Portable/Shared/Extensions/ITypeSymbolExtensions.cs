@@ -290,7 +290,20 @@ namespace Microsoft.CodeAnalysis.Shared.Extensions
             }
         }
 
-        // Determine if "type" inherits from "baseType", ignoring constructed types, and dealing
+        // Determine if "type" inherits from "baseType", ignoring constructed types, optionally including interfaces,
+        // dealing only with original types.
+        public static bool InheritsFromOrEquals(
+            this ITypeSymbol type, ITypeSymbol baseType, bool includeInterfaces)
+        {
+            if (!includeInterfaces)
+            {
+                return InheritsFromOrEquals(type, baseType);
+            }
+
+            return type.GetBaseTypesAndThis().Concat(type.AllInterfaces).Contains(t => SymbolEquivalenceComparer.Instance.Equals(t, baseType));
+        }
+
+        // Determine if "type" inherits from "baseType", ignoring constructed types and interfaces, dealing
         // only with original types.
         public static bool InheritsFromOrEquals(
             this ITypeSymbol type, ITypeSymbol baseType)
@@ -607,11 +620,11 @@ namespace Microsoft.CodeAnalysis.Shared.Extensions
             return false;
         }
 
-        public static bool CanSupportCollectionInitializer(this ITypeSymbol typeSymbol)
+        public static bool CanSupportCollectionInitializer(this ITypeSymbol typeSymbol, ISymbol within)
         {
             return
                 typeSymbol.AllInterfaces.Any(i => i.SpecialType == SpecialType.System_Collections_IEnumerable) &&
-                typeSymbol.GetMembers(WellKnownMemberNames.CollectionInitializerAddMethodName)
+                typeSymbol.GetAccessibleMembersInThisAndBaseTypes<IMethodSymbol>(within ?? typeSymbol).Where(s => s.Name == WellKnownMemberNames.CollectionInitializerAddMethodName)
                     .OfType<IMethodSymbol>()
                     .Any(m => m.Parameters.Any());
         }

@@ -8,14 +8,12 @@ namespace Microsoft.CodeAnalysis.CodeFixes
     internal partial class FixMultipleCodeAction : FixAllCodeAction
     {
         private readonly string _title;
-        private readonly string _previewChangesDialogTitle;
         private readonly string _computingFixWaitDialogMessage;
 
-        internal FixMultipleCodeAction(FixMultipleContext fixMultipleContext, FixAllProvider fixAllProvider, string title, string previewChangesDialogTitle, string computingFixWaitDialogMessage, bool showPreviewChangesDialog)
-            : base (fixMultipleContext, fixAllProvider, showPreviewChangesDialog)
+        internal FixMultipleCodeAction(FixMultipleContext fixMultipleContext, FixAllProvider fixAllProvider, string title, string computingFixWaitDialogMessage, bool showPreviewChangesDialog)
+            : base(fixMultipleContext, fixAllProvider, showPreviewChangesDialog)
         {
             _title = title;
-            _previewChangesDialogTitle = previewChangesDialogTitle;
             _computingFixWaitDialogMessage = computingFixWaitDialogMessage;
         }
 
@@ -25,7 +23,6 @@ namespace Microsoft.CodeAnalysis.CodeFixes
         }
 
         public override string Title => _title;
-        protected override string FixAllPreviewChangesTitle => _previewChangesDialogTitle;
-        protected override string ComputingFixAllWaitDialogMessage => _computingFixWaitDialogMessage;
+        internal override string Message => _computingFixWaitDialogMessage;
     }
 }

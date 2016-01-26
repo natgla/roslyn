@@ -122,7 +122,7 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.EventHookup
                         },
                         _cancellationTokenSource.Token,
                         TaskContinuationOptions.OnlyOnRanToCompletion,
-                        ForegroundThreadAffinitizedObject.ForegroundTaskScheduler);
+                        ForegroundThreadAffinitizedObject.CurrentForegroundThreadData.TaskScheduler);
 
                     continuedTask.CompletesAsyncOperation(asyncToken);
                 }

@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Editor.UnitTests.Diagnostics;
 using Roslyn.Test.Utilities;
 using Xunit;
@@ -21,7 +22,7 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.UnitTests.Diagnostics.Suppression
                 [Fact]
                 [Trait(Traits.Feature, Traits.Features.CodeActionsSuppression)]
                 [Trait(Traits.Feature, Traits.Features.CodeActionsFixAllOccurrences)]
-                public void TestFixAllInDocument()
+                public async Task TestFixAllInDocument()
                 {
                     var input = @"
 <Workspace>
@@ -40,6 +41,7 @@ using System;
 class Class2
 {
 }
+class Class3 { }
         </Document>
         <Document>
 class Class3
@@ -85,6 +87,9 @@ class Class2
 #pragma warning restore InfoDiagnostic // InfoDiagnostic Title
 {
 }
+#pragma warning disable InfoDiagnostic // InfoDiagnostic Title
+class Class3 { }
+#pragma warning restore InfoDiagnostic // InfoDiagnostic Title
         </Document>
         <Document>
 class Class3
@@ -109,13 +114,13 @@ class Class2
     </Project>
 </Workspace>";
 
-                    Test(input, expected, compareTokens: false, fixAllActionEquivalenceKey: FixAllActionEquivalenceKey);
+                    await TestAsync(input, expected, compareTokens: false, fixAllActionEquivalenceKey: FixAllActionEquivalenceKey);
                 }
 
                 [Fact]
                 [Trait(Traits.Feature, Traits.Features.CodeActionsSuppression)]
                 [Trait(Traits.Feature, Traits.Features.CodeActionsFixAllOccurrences)]
-                public void TestFixAllInProject()
+                public async Task TestFixAllInProject()
                 {
                     var input = @"
 <Workspace>
@@ -205,13 +210,13 @@ class Class2
     </Project>
 </Workspace>";
 
-                    Test(input, expected, compareTokens: false, fixAllActionEquivalenceKey: FixAllActionEquivalenceKey);
+                    await TestAsync(input, expected, compareTokens: false, fixAllActionEquivalenceKey: FixAllActionEquivalenceKey);
                 }
 
                 [Fact]
                 [Trait(Traits.Feature, Traits.Features.CodeActionsSuppression)]
                 [Trait(Traits.Feature, Traits.Features.CodeActionsFixAllOccurrences)]
-                public void TestFixAllInSolution()
+                public async Task TestFixAllInSolution()
                 {
                     var input = @"
 <Workspace>
@@ -305,7 +310,7 @@ class Class2
     </Project>
 </Workspace>";
 
-                    Test(input, expected, compareTokens: false, fixAllActionEquivalenceKey: FixAllActionEquivalenceKey);
+                    await TestAsync(input, expected, compareTokens: false, fixAllActionEquivalenceKey: FixAllActionEquivalenceKey);
                 }
             }
         }
@@ -323,7 +328,7 @@ class Class2
                 [Fact]
                 [Trait(Traits.Feature, Traits.Features.CodeActionsSuppression)]
                 [Trait(Traits.Feature, Traits.Features.CodeActionsFixAllOccurrences)]
-                public void TestFixAllInDocument()
+                public async Task TestFixAllInDocument()
                 {
                     var input = @"
 <Workspace>
@@ -374,9 +379,8 @@ class Class2
 
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(""InfoDiagnostic"", ""InfoDiagnostic:InfoDiagnostic"", Justification = ""{FeaturesResources.SuppressionPendingJustification}"", Scope = ""member"", Target = ""~M:Class1.Method~System.Int32"")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(""InfoDiagnostic"", ""InfoDiagnostic:InfoDiagnostic"", Justification = ""{FeaturesResources.SuppressionPendingJustification}"", Scope = ""type"", Target = ""~T:Class1"")]
-[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(""InfoDiagnostic"", ""InfoDiagnostic:InfoDiagnostic"", Justification = ""{FeaturesResources.SuppressionPendingJustification}"", Scope = ""type"", Target = ""~T:Class2"")]
-
-".Replace("<", "&lt;").Replace(">", "&gt;");
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(""InfoDiagnostic"", ""InfoDiagnostic:InfoDiagnostic"", Justification = ""{FeaturesResources.SuppressionPendingJustification}"", Scope = ""type"", Target = ""~T:Class2"")]"
+    .Replace("<", "&lt;").Replace(">", "&gt;");
 
                     var expected = @"
 <Workspace>
@@ -421,13 +425,13 @@ class Class2
     </Project>
 </Workspace>";
 
-                    Test(input, expected, compareTokens: false, fixAllActionEquivalenceKey: FixAllActionEquivalenceKey);
+                    await TestAsync(input, expected, compareTokens: false, fixAllActionEquivalenceKey: FixAllActionEquivalenceKey);
                 }
 
                 [Fact]
                 [Trait(Traits.Feature, Traits.Features.CodeActionsSuppression)]
                 [Trait(Traits.Feature, Traits.Features.CodeActionsFixAllOccurrences)]
-                public void TestFixAllInProject()
+                public async Task TestFixAllInProject()
                 {
                     var input = @"
 <Workspace>
@@ -479,9 +483,8 @@ class Class2
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(""InfoDiagnostic"", ""InfoDiagnostic:InfoDiagnostic"", Justification = ""{FeaturesResources.SuppressionPendingJustification}"", Scope = ""member"", Target = ""~M:Class1.Method~System.Int32"")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(""InfoDiagnostic"", ""InfoDiagnostic:InfoDiagnostic"", Justification = ""{FeaturesResources.SuppressionPendingJustification}"", Scope = ""type"", Target = ""~T:Class1"")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(""InfoDiagnostic"", ""InfoDiagnostic:InfoDiagnostic"", Justification = ""{FeaturesResources.SuppressionPendingJustification}"", Scope = ""type"", Target = ""~T:Class2"")]
-[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(""InfoDiagnostic"", ""InfoDiagnostic:InfoDiagnostic"", Justification = ""{FeaturesResources.SuppressionPendingJustification}"", Scope = ""type"", Target = ""~T:Class3"")]
-
-".Replace("<", "&lt;").Replace(">", "&gt;");
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(""InfoDiagnostic"", ""InfoDiagnostic:InfoDiagnostic"", Justification = ""{FeaturesResources.SuppressionPendingJustification}"", Scope = ""type"", Target = ""~T:Class3"")]"
+    .Replace("<", "&lt;").Replace(">", "&gt;");
 
                     var expected = @"
 <Workspace>
@@ -526,13 +529,13 @@ class Class2
     </Project>
 </Workspace>";
 
-                    Test(input, expected, compareTokens: false, fixAllActionEquivalenceKey: FixAllActionEquivalenceKey);
+                    await TestAsync(input, expected, compareTokens: false, fixAllActionEquivalenceKey: FixAllActionEquivalenceKey);
                 }
 
-                [Fact(Skip ="TODO: File a GitHubIssue for test framework unable to handle multiple projects in solution with same file name.")]
+                [Fact(Skip = "TODO: File a GitHubIssue for test framework unable to handle multiple projects in solution with same file name.")]
                 [Trait(Traits.Feature, Traits.Features.CodeActionsSuppression)]
                 [Trait(Traits.Feature, Traits.Features.CodeActionsFixAllOccurrences)]
-                public void TestFixAllInSolution()
+                public async Task TestFixAllInSolution()
                 {
                     var input = @"
 <Workspace>
@@ -645,8 +648,114 @@ class Class2
     </Project>
 </Workspace>";
 
-                    Test(input, expected, compareTokens: false, fixAllActionEquivalenceKey: FixAllActionEquivalenceKey);
+                    await TestAsync(input, expected, compareTokens: false, fixAllActionEquivalenceKey: FixAllActionEquivalenceKey);
                 }
+            }
+        }
+
+        public partial class CSharpDiagnosticWithoutLocationSuppressionTests : CSharpSuppressionTests
+        {
+            private string FixAllActionEquivalenceKey => FeaturesResources.SuppressWithGlobalSuppressMessage + UserDiagnosticAnalyzer.Descriptor.Id;
+
+            [Fact]
+            [Trait(Traits.Feature, Traits.Features.CodeActionsSuppression)]
+            [Trait(Traits.Feature, Traits.Features.CodeActionsFixAllOccurrences)]
+            public async Task TestFixAllInProject()
+            {
+                var input = @"
+<Workspace>
+    <Project Language=""C#"" AssemblyName=""Assembly1"" CommonReferences=""true"">
+        <Document>{|FixAllInProject:|}
+using System;
+
+class Class1
+{
+    int Method()
+    {
+        int x = 0;
+    }
+}
+
+class Class2
+{
+}
+        </Document>
+        <Document>
+class Class3
+{
+}
+        </Document>
+    </Project>
+    <Project Language=""C#"" AssemblyName=""Assembly2"" CommonReferences=""true"">
+        <Document>
+class Class1
+{
+    int Method()
+    {
+        int x = 0;
+    }
+}
+
+class Class2
+{
+}
+        </Document>
+    </Project>
+</Workspace>";
+
+                var addedGlobalSuppressions = $@"
+// This file is used by Code Analysis to maintain SuppressMessage 
+// attributes that are applied to this project.
+// Project-level suppressions either have no target or are given 
+// a specific target and scoped to a namespace, type, member, etc.
+
+[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage(""NoLocationDiagnostic"", ""NoLocationDiagnostic:NoLocationDiagnostic"", Justification = ""{FeaturesResources.SuppressionPendingJustification}"")]"
+    .Replace("<", "&lt;").Replace(">", "&gt;");
+
+                var expected = @"
+<Workspace>
+    <Project Language=""C#"" AssemblyName=""Assembly1"" CommonReferences=""true"">
+        <Document>
+using System;
+
+class Class1
+{
+    int Method()
+    {
+        int x = 0;
+    }
+}
+
+class Class2
+{
+}
+        </Document>
+        <Document>
+class Class3
+{
+}
+        </Document>
+        <Document FilePath=""GlobalSuppressions.cs"">" + addedGlobalSuppressions +
+    @"</Document>
+    </Project>
+    <Project Language=""C#"" AssemblyName=""Assembly2"" CommonReferences=""true"">
+        <Document>
+class Class1
+{
+    int Method()
+    {
+        int x = 0;
+    }
+}
+
+class Class2
+{
+}
+        </Document>
+    </Project>
+</Workspace>";
+
+                await TestAsync(input, expected, compareTokens: false, fixAllActionEquivalenceKey: FixAllActionEquivalenceKey);
             }
         }
 

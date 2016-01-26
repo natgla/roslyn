@@ -3,9 +3,11 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Completion;
 using Microsoft.CodeAnalysis.Editor.CSharp.Completion.FileSystem;
 using Microsoft.CodeAnalysis.Editor.CSharp.UnitTests.Completion.CompletionProviders;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces;
 using Roslyn.Test.Utilities;
 using Xunit;
 
@@ -13,6 +15,10 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.UnitTests.IntelliSense.Completion
 {
     public class ReferenceDirectiveCompletionProviderTests : AbstractCSharpCompletionProviderTests
     {
+        public ReferenceDirectiveCompletionProviderTests(CSharpTestWorkspaceFixture workspaceFixture) : base(workspaceFixture)
+        {
+        }
+
         internal override CompletionListProvider CreateCompletionProvider()
         {
             return new ReferenceDirectiveCompletionProvider();
@@ -23,9 +29,9 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.UnitTests.IntelliSense.Completion
             return actualItem.Equals(expectedItem, StringComparison.OrdinalIgnoreCase);
         }
 
-        protected override void VerifyWorker(string code, int position, string expectedItemOrNull, string expectedDescriptionOrNull, SourceCodeKind sourceCodeKind, bool usePreviousCharAsTrigger, bool checkForAbsence, bool experimental, int? glyph)
+        protected override Task VerifyWorkerAsync(string code, int position, string expectedItemOrNull, string expectedDescriptionOrNull, SourceCodeKind sourceCodeKind, bool usePreviousCharAsTrigger, bool checkForAbsence, bool experimental, int? glyph)
         {
-            BaseVerifyWorker(code,
+            return BaseVerifyWorkerAsync(code,
                 position,
                 expectedItemOrNull,
                 expectedDescriptionOrNull,
@@ -35,24 +41,23 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.UnitTests.IntelliSense.Completion
                 glyph);
         }
 
-        private void VerifyItemsExistInScriptAndInteractive(string code, params string[] expected)
+        private async Task VerifyItemsExistInScriptAndInteractiveAsync(string code, params string[] expected)
         {
             foreach (var ex in expected)
             {
-                VerifyItemExists(code, ex, expectedDescriptionOrNull: null, sourceCodeKind: SourceCodeKind.Script);
-                VerifyItemExists(code, ex, expectedDescriptionOrNull: null, sourceCodeKind: SourceCodeKind.Interactive);
+                await VerifyItemExistsAsync(code, ex, expectedDescriptionOrNull: null, sourceCodeKind: SourceCodeKind.Script);
             }
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void IsCommitCharacterTest()
+        public async Task IsCommitCharacterTest()
         {
             var commitCharacters = new[] { '"', '\\', ',' };
-            VerifyCommitCharacters("#r \"$$", textTypedSoFar: "", validChars: commitCharacters);
+            await VerifyCommitCharactersAsync("#r \"$$", textTypedSoFar: "", validChars: commitCharacters);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void IsTextualTriggerCharacterTest()
+        public async Task IsTextualTriggerCharacterTest()
         {
             var validMarkupList = new[]
             {
@@ -63,7 +68,7 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.UnitTests.IntelliSense.Completion
 
             foreach (var markup in validMarkupList)
             {
-                VerifyTextualTriggerCharacter(markup, shouldTriggerWithTriggerOnLettersEnabled: true, shouldTriggerWithTriggerOnLettersDisabled: true);
+                await VerifyTextualTriggerCharacterAsync(markup, shouldTriggerWithTriggerOnLettersEnabled: true, shouldTriggerWithTriggerOnLettersDisabled: true);
             }
 
             var invalidMarkupList = new[]
@@ -75,54 +80,54 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.UnitTests.IntelliSense.Completion
 
             foreach (var markup in invalidMarkupList)
             {
-                VerifyTextualTriggerCharacter(markup, shouldTriggerWithTriggerOnLettersEnabled: false, shouldTriggerWithTriggerOnLettersDisabled: false);
+                await VerifyTextualTriggerCharacterAsync(markup, shouldTriggerWithTriggerOnLettersEnabled: false, shouldTriggerWithTriggerOnLettersDisabled: false);
             }
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void SendEnterThroughToEditorTest()
+        public async Task SendEnterThroughToEditorTest()
         {
-            VerifySendEnterThroughToEnter("#r \"System$$", "System", sendThroughEnterEnabled: false, expected: false);
-            VerifySendEnterThroughToEnter("#r \"System$$", "System", sendThroughEnterEnabled: true, expected: false);
+            await VerifySendEnterThroughToEnterAsync("#r \"System$$", "System", sendThroughEnterEnabled: false, expected: false);
+            await VerifySendEnterThroughToEnterAsync("#r \"System$$", "System", sendThroughEnterEnabled: true, expected: false);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void RootDrives()
+        public async Task RootDrives()
         {
             // ensure drives are listed without the trailing backslash
             var drive = Environment.GetLogicalDrives().First().TrimEnd('\\');
-            VerifyItemsExistInScriptAndInteractive(
+            await VerifyItemsExistInScriptAndInteractiveAsync(
                 "#r \"$$",
                 drive);
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void RelativeDirectories()
+        public async Task RelativeDirectories()
         {
-            VerifyItemsExistInScriptAndInteractive(
+            await VerifyItemsExistInScriptAndInteractiveAsync(
                 "#r \"$$",
                 ".",
                 "..");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void GACReference()
+        public async Task GACReference()
         {
-            VerifyItemsExistInScriptAndInteractive(
+            await VerifyItemsExistInScriptAndInteractiveAsync(
                 "#r \"$$",
                 "System.Windows.Forms");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void GACReferenceFullyQualified()
+        public async Task GACReferenceFullyQualified()
         {
-            VerifyItemsExistInScriptAndInteractive(
+            await VerifyItemsExistInScriptAndInteractiveAsync(
                 "#r \"System.Windows.Forms,$$",
                 "System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
         }
 
         [Fact, Trait(Traits.Feature, Traits.Features.Completion)]
-        public void FileSystemReference()
+        public async Task FileSystemReference()
         {
             string systemDir = Path.GetFullPath(Environment.SystemDirectory);
             DirectoryInfo windowsDir = System.IO.Directory.GetParent(systemDir);
@@ -134,7 +139,7 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.UnitTests.IntelliSense.Completion
             var windowsFolderName = Path.GetFileName(normalizedWindowsPath);
 
             var code = "#r \"" + windowsRoot + "$$";
-            VerifyItemsExistInScriptAndInteractive(
+            await VerifyItemsExistInScriptAndInteractiveAsync(
                 code,
                 windowsFolderName);
         }

@@ -57,13 +57,10 @@ namespace Microsoft.CodeAnalysis.CodeFixes
                 {
                     fixAllContext.CancellationToken.ThrowIfCancellationRequested();
 
-                    var documents = documentsAndDiagnosticsToFixMap.Keys.ToImmutableArray();
-                    var options = new ParallelOptions() { CancellationToken = fixAllContext.CancellationToken };
-                    Parallel.ForEach(documents, options, document =>
-                    {
-                        fixAllContext.CancellationToken.ThrowIfCancellationRequested();
-                        AddDocumentFixesAsync(document, documentsAndDiagnosticsToFixMap[document], fixesBag.Add, fixAllContext).Wait(fixAllContext.CancellationToken);
-                    });
+                    var documents = documentsAndDiagnosticsToFixMap.Keys;
+                    var tasks = documents.Select(d => AddDocumentFixesAsync(d, documentsAndDiagnosticsToFixMap[d], fixesBag.Add, fixAllContext))
+                                         .ToArray();
+                    await Task.WhenAll(tasks).ConfigureAwait(false);
                 }
 
                 if (fixesBag.Any())
@@ -83,7 +80,8 @@ namespace Microsoft.CodeAnalysis.CodeFixes
         {
             Debug.Assert(!diagnostics.IsDefault);
             var cancellationToken = fixAllContext.CancellationToken;
-            var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+
             var fixerTasks = new Task[diagnostics.Length];
 
             for (var i = 0; i < diagnostics.Length; i++)
@@ -137,13 +135,10 @@ namespace Microsoft.CodeAnalysis.CodeFixes
 
                 using (Logger.LogBlock(FunctionId.CodeFixes_FixAllOccurrencesComputation_Fixes, fixAllContext.CancellationToken))
                 {
-                    var options = new ParallelOptions() { CancellationToken = fixAllContext.CancellationToken };
-                    Parallel.ForEach(projectsAndDiagnosticsToFixMap.Keys, options, project =>
-                    {
-                        fixAllContext.CancellationToken.ThrowIfCancellationRequested();
-                        var diagnostics = projectsAndDiagnosticsToFixMap[project];
-                        AddProjectFixesAsync(project, diagnostics, fixesBag.Add, fixAllContext).Wait(fixAllContext.CancellationToken);
-                    });
+                    var projects = projectsAndDiagnosticsToFixMap.Keys;
+                    var tasks = projects.Select(p => AddProjectFixesAsync(p, projectsAndDiagnosticsToFixMap[p], fixesBag.Add, fixAllContext))
+                                        .ToArray();
+                    await Task.WhenAll(tasks).ConfigureAwait(false);
                 }
 
                 if (fixesBag.Any())
@@ -159,9 +154,39 @@ namespace Microsoft.CodeAnalysis.CodeFixes
             return null;
         }
 
-        public virtual Task AddProjectFixesAsync(Project project, IEnumerable<Diagnostic> diagnostics, Action<CodeAction> addFix, FixAllContext fixAllContext)
+        public virtual async Task AddProjectFixesAsync(Project project, ImmutableArray<Diagnostic> diagnostics, Action<CodeAction> addFix, FixAllContext fixAllContext)
         {
-            throw new NotImplementedException();
+            Debug.Assert(!diagnostics.IsDefault);
+            var cancellationToken = fixAllContext.CancellationToken;
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var fixes = new List<CodeAction>();
+            var context = new CodeFixContext(project, diagnostics,
+
+                // TODO: Can we share code between similar lambdas that we pass to this API in BatchFixAllProvider.cs, CodeFixService.cs and CodeRefactoringService.cs?
+                (a, d) =>
+                {
+                    // Serialize access for thread safety - we don't know what thread the fix provider will call this delegate from.
+                    lock (fixes)
+                    {
+                        fixes.Add(a);
+                    }
+                },
+                cancellationToken);
+
+            // TODO: Wrap call to ComputeFixesAsync() below in IExtensionManager.PerformFunctionAsync() so that
+            // a buggy extension that throws can't bring down the host?
+            var task = fixAllContext.CodeFixProvider.RegisterCodeFixesAsync(context) ?? SpecializedTasks.EmptyTask;
+            await task.ConfigureAwait(false);
+
+            foreach (var fix in fixes)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (fix != null && fix.EquivalenceKey == fixAllContext.CodeActionEquivalenceKey)
+                {
+                    addFix(fix);
+                }
+            }
         }
 
         public virtual async Task<CodeAction> TryGetMergedFixAsync(IEnumerable<CodeAction> batchOfFixes, FixAllContext fixAllContext)
@@ -348,19 +373,25 @@ namespace Microsoft.CodeAnalysis.CodeFixes
                             return ImmutableDictionary.CreateRange(kvp);
 
                         case FixAllScope.Solution:
-                            var projectsAndDiagnostics = new ConcurrentDictionary<Project, ImmutableArray<Diagnostic>>();
-                            var options = new ParallelOptions() { CancellationToken = fixAllContext.CancellationToken };
-                            Parallel.ForEach(project.Solution.Projects, options, proj =>
-                            {
-                                fixAllContext.CancellationToken.ThrowIfCancellationRequested();
-                                var projectDiagnostics = fixAllContext.GetProjectDiagnosticsAsync(proj).WaitAndGetResult(fixAllContext.CancellationToken);
-                                if (projectDiagnostics.Any())
-                                {
-                                    projectsAndDiagnostics.TryAdd(proj, projectDiagnostics);
-                                }
-                            });
+                            var projectsAndDiagnostics = ImmutableDictionary.CreateBuilder<Project, ImmutableArray<Diagnostic>>();
 
-                            return projectsAndDiagnostics.ToImmutableDictionary();
+                            var tasks = project.Solution.Projects.Select(async p => new
+                            {
+                                Project = p,
+                                Diagnostics = await fixAllContext.GetProjectDiagnosticsAsync(p).ConfigureAwait(false)
+                            }).ToArray();
+
+                            await Task.WhenAll(tasks).ConfigureAwait(false);
+
+                            foreach (var task in tasks)
+                            {
+                                if (task.Result.Diagnostics.Any())
+                                {
+                                    projectsAndDiagnostics[task.Result.Project] = task.Result.Diagnostics;
+                                }
+                            }
+
+                            return projectsAndDiagnostics.ToImmutable();
                     }
                 }
 
@@ -377,7 +408,7 @@ namespace Microsoft.CodeAnalysis.CodeFixes
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 // TODO: Parallelize GetChangedSolutionInternalAsync for codeActions
-                var changedSolution = await codeAction.GetChangedSolutionInternalAsync(cancellationToken).ConfigureAwait(false);
+                var changedSolution = await codeAction.GetChangedSolutionInternalAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
 
                 var solutionChanges = new SolutionChanges(changedSolution, oldSolution);
 

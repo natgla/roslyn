@@ -556,7 +556,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         public SyntaxNode GetExpressionOfMemberAccessExpression(SyntaxNode node)
         {
             return node.IsKind(SyntaxKind.MemberBindingExpression)
-                ? GetExpressionOfConditionalMemberAccessExpression(node.GetParentConditionalAccessExpression()) 
+                ? GetExpressionOfConditionalMemberAccessExpression(node.GetParentConditionalAccessExpression())
                 : (node as MemberAccessExpressionSyntax)?.Expression;
         }
 
@@ -1389,6 +1389,45 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             openBrace = default(SyntaxToken);
             return false;
+        }
+
+        public TextSpan GetInactiveRegionSpanAroundPosition(SyntaxTree syntaxTree, int position, CancellationToken cancellationToken)
+        {
+            var trivia = syntaxTree.GetRoot(cancellationToken).FindTrivia(position, findInsideTrivia: false);
+            if (trivia.Kind() == SyntaxKind.DisabledTextTrivia)
+            {
+                return trivia.FullSpan;
+            }
+
+            var token = syntaxTree.FindTokenOrEndToken(position, cancellationToken);
+            if (token.Kind() == SyntaxKind.EndOfFileToken)
+            {
+                var triviaList = token.LeadingTrivia;
+                foreach (var triviaTok in triviaList.Reverse())
+                {
+                    if (triviaTok.Span.Contains(position))
+                    {
+                        return default(TextSpan);
+                    }
+
+                    if (triviaTok.Span.End < position)
+                    {
+                        if (!triviaTok.HasStructure)
+                        {
+                            return default(TextSpan);
+                        }
+
+                        var structure = triviaTok.GetStructure();
+                        if (structure is BranchingDirectiveTriviaSyntax)
+                        {
+                            var branch = (BranchingDirectiveTriviaSyntax)structure;
+                            return !branch.IsActive || !branch.BranchTaken ? TextSpan.FromBounds(branch.FullSpan.Start, position) : default(TextSpan);
+                        }
+                    }
+                }
+            }
+
+            return default(TextSpan);
         }
     }
 }

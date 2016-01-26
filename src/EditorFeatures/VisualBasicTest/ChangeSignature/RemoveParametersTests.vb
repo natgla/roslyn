@@ -1,5 +1,6 @@
 ' Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
+Imports System.Threading.Tasks
 Imports Microsoft.CodeAnalysis.Editor.Implementation.Interactive
 Imports Microsoft.CodeAnalysis.Editor.UnitTests
 Imports Microsoft.CodeAnalysis.Editor.UnitTests.ChangeSignature
@@ -11,8 +12,8 @@ Namespace Microsoft.CodeAnalysis.Editor.VisualBasic.UnitTests.ChangeSignature
     Partial Public Class ChangeSignatureTests
         Inherits AbstractChangeSignatureTests
 
-        <Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)>
-        Public Sub RemoveParameters1()
+        <WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)>
+        Public Async Function TestRemoveParameters1() As Task
 
             Dim markup = <Text><![CDATA[
 Module Program
@@ -86,18 +87,18 @@ End Module
 
 ]]></Text>.NormalizedValue()
 
-            TestChangeSignatureViaCommand(LanguageNames.VisualBasic, markup, updatedSignature:=permutation, expectedUpdatedInvocationDocumentCode:=updatedCode)
+            Await TestChangeSignatureViaCommandAsync(LanguageNames.VisualBasic, markup, updatedSignature:=permutation, expectedUpdatedInvocationDocumentCode:=updatedCode)
 
-        End Sub
+        End Function
 
-        <Fact>
+        <WpfFact>
         <Trait(Traits.Feature, Traits.Features.ChangeSignature)>
         <Trait(Traits.Feature, Traits.Features.Interactive)>
-        Public Sub ChangeSignatureCommandDisabledInSubmission()
+        Public Async Function TestChangeSignatureCommandDisabledInSubmission() As Task
             Dim exportProvider = MinimalTestExportProvider.CreateExportProvider(
-                TestExportProvider.EntireAssemblyCatalogWithCSharpAndVisualBasic.WithParts(GetType(InteractiveDocumentSupportsCodeFixService)))
+                TestExportProvider.EntireAssemblyCatalogWithCSharpAndVisualBasic.WithParts(GetType(InteractiveDocumentSupportsFeatureService)))
 
-            Using workspace = TestWorkspaceFactory.CreateWorkspace(
+            Using workspace = Await TestWorkspace.CreateAsync(
                 <Workspace>
                     <Submission Language="Visual Basic" CommonReferences="true">  
                         Class C
@@ -131,6 +132,6 @@ End Module
                 Assert.True(delegatedToNext)
                 Assert.False(state.IsAvailable)
             End Using
-        End Sub
+        End Function
     End Class
 End Namespace

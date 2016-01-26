@@ -12,8 +12,9 @@ Namespace Microsoft.CodeAnalysis.Editor.VisualBasic.Outlining
 
         Private Shared Function GetBannerText(documentationComment As DocumentationCommentTriviaSyntax, cancellationToken As CancellationToken) As String
             ' TODO: Consider unifying code to extract text from an Xml Documentation Comment (https://github.com/dotnet/roslyn/issues/2290)
-            Dim summaryElement = documentationComment.Content.OfType(Of XmlElementSyntax)() _
-                                    .FirstOrDefault(Function(e) e.StartTag.Name.ToString = "summary")
+            Dim summaryElement = documentationComment.Content _
+                .OfType(Of XmlElementSyntax)() _
+                .FirstOrDefault(Function(e) e.StartTag.Name.ToString = "summary")
 
             Dim text As String
             If summaryElement IsNot Nothing Then
@@ -26,22 +27,19 @@ Namespace Microsoft.CodeAnalysis.Editor.VisualBasic.Outlining
                         AppendTextTokens(sb, textTokens)
                     ElseIf node.Kind() = SyntaxKind.XmlEmptyElement Then
                         Dim elementNode = DirectCast(node, XmlEmptyElementSyntax)
-                        Dim cref = elementNode.Attributes.OfType(Of XmlCrefAttributeSyntax).FirstOrDefault()
-                        If cref IsNot Nothing Then
-                            sb.Append(" ")
-                            sb.Append(cref.Reference.ToString())
-                        End If
-
-                        Dim nameattribute = elementNode.Attributes.OfType(Of XmlNameAttributeSyntax).FirstOrDefault()
-                        If nameattribute IsNot Nothing Then
-                            sb.Append(" ")
-                            sb.Append(nameattribute.Reference.ToString())
-                        End If
-
-                        Dim langword = elementNode.Attributes.OfType(Of XmlAttributeSyntax).FirstOrDefault(Function(a) a.Name.ToString() = "langword")
-                        If langword IsNot Nothing Then
-                            AppendTextTokens(sb, DirectCast(langword.Value, XmlStringSyntax).TextTokens)
-                        End If
+                        For Each attribute In elementNode.Attributes
+                            If TypeOf attribute Is XmlCrefAttributeSyntax Then
+                                sb.Append(" ")
+                                sb.Append(DirectCast(attribute, XmlCrefAttributeSyntax).Reference.ToString())
+                            ElseIf TypeOf attribute Is XmlNameAttributeSyntax Then
+                                sb.Append(" ")
+                                sb.Append(DirectCast(attribute, XmlNameAttributeSyntax).Reference.ToString())
+                            ElseIf TypeOf attribute Is XmlAttributeSyntax Then
+                                AppendTextTokens(sb, DirectCast(DirectCast(attribute, XmlAttributeSyntax).Value, XmlStringSyntax).TextTokens)
+                            Else
+                                Debug.Fail($"Unexpected XML syntax kind {attribute.Kind()}")
+                            End If
+                        Next
                     End If
                 Next
 
@@ -51,11 +49,11 @@ Namespace Microsoft.CodeAnalysis.Editor.VisualBasic.Outlining
                 Dim span = documentationComment.Span
                 Dim syntaxTree = documentationComment.SyntaxTree
                 Dim line = syntaxTree.GetText(cancellationToken).Lines.GetLineFromPosition(span.Start)
-                text = "''' " & line.ToString().Substring(span.Start - line.Start).Trim() & " " + Ellipsis
+                text = "''' " & line.ToString().Substring(span.Start - line.Start).Trim() & SpaceEllipsis
             End If
 
             If text.Length > MaxXmlDocCommentBannerLength Then
-                text = text.Substring(0, MaxXmlDocCommentBannerLength) & " " & Ellipsis
+                text = text.Substring(0, MaxXmlDocCommentBannerLength) & SpaceEllipsis
             End If
 
             Return text
@@ -86,10 +84,8 @@ Namespace Microsoft.CodeAnalysis.Editor.VisualBasic.Outlining
 
             Dim fullSpan = TextSpan.FromBounds(startPos, endPos)
 
-            spans.Add(VisualBasicOutliningHelpers.CreateRegion(
-                            fullSpan,
-                            GetBannerText(documentationComment, cancellationToken),
-                            autoCollapse:=True))
+            spans.Add(
+                CreateRegion(fullSpan, GetBannerText(documentationComment, cancellationToken), autoCollapse:=True))
         End Sub
     End Class
 End Namespace

@@ -201,11 +201,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 Dim t1IsDefinition = t1.IsDefinition
                 Dim t2IsDefinition = t2.IsDefinition
 
-                If (t1IsDefinition <> t2IsDefinition) Then
+                If (t1IsDefinition <> t2IsDefinition) AndAlso
+                   Not (DirectCast(t1, NamedTypeSymbol).HasTypeArgumentsCustomModifiers OrElse DirectCast(t2, NamedTypeSymbol).HasTypeArgumentsCustomModifiers) Then
                     Return False
                 End If
 
-                If Not t1IsDefinition Then ' This is a generic instantiation
+                If Not (t1IsDefinition AndAlso t2IsDefinition) Then ' This is a generic instantiation case
 
                     If t1.OriginalDefinition <> t2.OriginalDefinition Then
                         Return False ' different definition
@@ -913,7 +914,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
 
             ' Check for type arguments equal to type parameters of this type,
             ' but not contained by it ("cross-pollination"). Replace them with 
-            ' this type type parameters.
+            ' this types' type parameters.
             Dim newTypeArguments As TypeSymbol() = Nothing
             Dim i As Integer = 0
             Dim typeArgument As TypeSymbol

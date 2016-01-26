@@ -867,7 +867,7 @@ End Namespace
             End Using
         End Sub
 
-        <Fact(Skip:="657210")>
+        <WpfFact(Skip:="657210")>
         <WorkItem(653311)>
         <Trait(Traits.Feature, Traits.Features.Rename)>
         Public Sub VB_ConflictForUsingVariableAndRangeVariable_3()

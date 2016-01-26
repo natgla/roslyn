@@ -52,10 +52,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)Metadata\TypeAttributesMissing.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Metadata\PEModuleTestHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Mocks\TestDocumentationCommentProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mocks\TestMissingMetadataReferenceResolver.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Mocks\TestSourceReferenceResolver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Mocks\VirtualizedRelativePathResolver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Pdb\MockSymWriter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Pdb\PdbTestUtilities.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Pdb\PdbValidation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Syntax\SourceUtilities.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TempFiles\DisposableDirectory.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TempFiles\DisposableFile.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)TempFiles\TempDirectory.cs" />

@@ -13,7 +13,6 @@ using Microsoft.CodeAnalysis.LanguageServices;
 using Microsoft.CodeAnalysis.Options;
 using Microsoft.CodeAnalysis.Shared.Extensions;
 using Microsoft.CodeAnalysis.Shared.Options;
-using Microsoft.CodeAnalysis.Shared.TestHooks;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.Versions;
 using Roslyn.Utilities;
@@ -26,8 +25,17 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
         private readonly MemberRangeMap _memberRangeMap;
         private readonly AnalyzerExecutor _executor;
         private readonly StateManager _stateManager;
-        private readonly SimpleTaskQueue _eventQueue;
-        
+
+        /// <summary>
+        /// PERF: Always run analyzers sequentially for background analysis.
+        /// </summary>
+        private const bool ConcurrentAnalysis = false;
+
+        /// <summary>
+        /// Always compute suppressed diagnostics - diagnostic clients may or may not request for suppressed diagnostics.
+        /// </summary>
+        private const bool ReportSuppressedDiagnostics = true;
+
         public DiagnosticIncrementalAnalyzer(
             DiagnosticAnalyzerService owner,
             int correlationId,
@@ -39,7 +47,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
             _correlationId = correlationId;
             _memberRangeMap = new MemberRangeMap();
             _executor = new AnalyzerExecutor(this);
-            _eventQueue = new SimpleTaskQueue(TaskScheduler.Default);
+
             _stateManager = new StateManager(analyzerManager);
             _stateManager.ProjectAnalyzerReferenceChanged += OnProjectAnalyzerReferenceChanged;
         }
@@ -52,9 +60,8 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
                 return;
             }
 
-            // guarantee order of the events.
-            var asyncToken = Owner.Listener.BeginAsyncOperation(nameof(OnProjectAnalyzerReferenceChanged));
-            _eventQueue.ScheduleTask(() => ClearProjectStatesAsync(e.Project, e.Removed, CancellationToken.None), CancellationToken.None).CompletesAsyncOperation(asyncToken);
+            // events will be automatically serialized.
+            ClearProjectStatesAsync(e.Project, e.Removed, CancellationToken.None);
         }
 
         public override Task DocumentOpenAsync(Document document, CancellationToken cancellationToken)
@@ -80,11 +87,9 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
         {
             using (Logger.LogBlock(FunctionId.Diagnostics_DocumentReset, GetResetLogMessage, document, cancellationToken))
             {
-                // unlike document open or close where we don't know whether this document will be re-analyzed again due to
-                // engine's option such as "Close File Diagnostics", this one will be called when we want to re-analyze the document
-                // for whatever reason. so we let events to be raised when actual analysis happens but clear the cache so that
-                // we don't return existing data without re-analysis.
-                return ClearOnlyDocumentStates(document, raiseEvent: false, cancellationToken: cancellationToken);
+                // clear states for re-analysis and raise events about it. otherwise, some states might not updated on re-analysis
+                // due to our build-live de-duplication logic where we put all state in Documents state.
+                return ClearOnlyDocumentStates(document, raiseEvent: true, cancellationToken: cancellationToken);
             }
         }
 
@@ -114,9 +119,41 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
             return false;
         }
 
-        internal IEnumerable<DiagnosticAnalyzer> GetAnalyzers(Project project)
+        internal CompilationWithAnalyzers GetCompilationWithAnalyzers(Project project, Compilation compilation, bool concurrentAnalysis, bool reportSuppressedDiagnostics)
         {
-            return _stateManager.GetAnalyzers(project);
+            Contract.ThrowIfFalse(project.SupportsCompilation);
+            Contract.ThrowIfNull(compilation);
+
+            Func<Exception, bool> analyzerExceptionFilter = ex =>
+            {
+                if (project.Solution.Workspace.Options.GetOption(InternalDiagnosticsOptions.CrashOnAnalyzerException))
+                {
+                    // if option is on, crash the host to get crash dump.
+                    FatalError.ReportUnlessCanceled(ex);
+                }
+
+                return true;
+            };
+
+            var analysisOptions = new CompilationWithAnalyzersOptions(
+                new WorkspaceAnalyzerOptions(project.AnalyzerOptions, project.Solution.Workspace),
+                GetOnAnalyzerException(project.Id),
+                analyzerExceptionFilter,
+                concurrentAnalysis,
+                logAnalyzerExecutionTime: true,
+                reportSuppressedDiagnostics: reportSuppressedDiagnostics);
+
+            var analyzers = _stateManager.GetAnalyzers(project);
+            var filteredAnalyzers = analyzers
+                .Where(a => !CompilationWithAnalyzers.IsDiagnosticAnalyzerSuppressed(a, compilation.Options, analysisOptions.OnAnalyzerException))
+                .Distinct()
+                .ToImmutableArray();
+            if (filteredAnalyzers.IsEmpty)
+            {
+                return null;
+            }
+
+            return new CompilationWithAnalyzers(compilation, filteredAnalyzers, analysisOptions);
         }
 
         public override async Task AnalyzeSyntaxAsync(Document document, CancellationToken cancellationToken)
@@ -140,7 +177,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
                 var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
                 var fullSpan = root == null ? null : (TextSpan?)root.FullSpan;
 
-                var userDiagnosticDriver = new DiagnosticAnalyzerDriver(document, fullSpan, root, this, cancellationToken);
+                var userDiagnosticDriver = new DiagnosticAnalyzerDriver(document, fullSpan, root, this, ConcurrentAnalysis, ReportSuppressedDiagnostics, cancellationToken);
                 var openedDocument = document.IsOpen();
 
                 foreach (var stateSet in _stateManager.GetOrUpdateStateSets(document.Project))
@@ -156,7 +193,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
                         var data = await _executor.GetSyntaxAnalysisDataAsync(userDiagnosticDriver, stateSet, versions).ConfigureAwait(false);
                         if (data.FromCache)
                         {
-                            RaiseDiagnosticsUpdated(StateType.Syntax, document.Id, stateSet, new SolutionArgument(document), data.Items);
+                            RaiseDiagnosticsCreatedFromCacheIfNeeded(StateType.Syntax, document, stateSet, data.Items);
                             continue;
                         }
 
@@ -217,8 +254,8 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
                 var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
                 var memberId = syntaxFacts.GetMethodLevelMemberId(root, member);
 
-                var spanBasedDriver = new DiagnosticAnalyzerDriver(document, member.FullSpan, root, this, cancellationToken);
-                var documentBasedDriver = new DiagnosticAnalyzerDriver(document, root.FullSpan, root, this, cancellationToken);
+                var spanBasedDriver = new DiagnosticAnalyzerDriver(document, member.FullSpan, root, this, ConcurrentAnalysis, ReportSuppressedDiagnostics, cancellationToken);
+                var documentBasedDriver = new DiagnosticAnalyzerDriver(document, root.FullSpan, root, this, ConcurrentAnalysis, ReportSuppressedDiagnostics, cancellationToken);
 
                 foreach (var stateSet in _stateManager.GetOrUpdateStateSets(document.Project))
                 {
@@ -244,7 +281,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
 
                         if (data.FromCache)
                         {
-                            RaiseDiagnosticsUpdated(StateType.Document, document.Id, stateSet, new SolutionArgument(document), data.Items);
+                            RaiseDiagnosticsCreatedFromCacheIfNeeded(StateType.Document, document, stateSet, data.Items);
                             continue;
                         }
 
@@ -265,7 +302,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
                 var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
                 var fullSpan = root == null ? null : (TextSpan?)root.FullSpan;
 
-                var userDiagnosticDriver = new DiagnosticAnalyzerDriver(document, fullSpan, root, this, cancellationToken);
+                var userDiagnosticDriver = new DiagnosticAnalyzerDriver(document, fullSpan, root, this, ConcurrentAnalysis, ReportSuppressedDiagnostics, cancellationToken);
                 bool openedDocument = document.IsOpen();
 
                 foreach (var stateSet in _stateManager.GetOrUpdateStateSets(document.Project))
@@ -281,7 +318,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
                         var data = await _executor.GetDocumentAnalysisDataAsync(userDiagnosticDriver, stateSet, versions).ConfigureAwait(false);
                         if (data.FromCache)
                         {
-                            RaiseDiagnosticsUpdated(StateType.Document, document.Id, stateSet, new SolutionArgument(document), data.Items);
+                            RaiseDiagnosticsCreatedFromCacheIfNeeded(StateType.Document, document, stateSet, data.Items);
                             continue;
                         }
 
@@ -321,7 +358,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
                 var projectTextVersion = await project.GetLatestDocumentVersionAsync(cancellationToken).ConfigureAwait(false);
                 var semanticVersion = await project.GetDependentSemanticVersionAsync(cancellationToken).ConfigureAwait(false);
                 var projectVersion = await project.GetDependentVersionAsync(cancellationToken).ConfigureAwait(false);
-                var analyzerDriver = new DiagnosticAnalyzerDriver(project, this, cancellationToken);
+                var analyzerDriver = new DiagnosticAnalyzerDriver(project, this, ConcurrentAnalysis, ReportSuppressedDiagnostics, cancellationToken);
 
                 var versions = new VersionArgument(projectTextVersion, semanticVersion, projectVersion);
                 foreach (var stateSet in _stateManager.GetOrUpdateStateSets(project))
@@ -338,7 +375,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
                         var data = await _executor.GetProjectAnalysisDataAsync(analyzerDriver, stateSet, versions).ConfigureAwait(false);
                         if (data.FromCache)
                         {
-                            RaiseProjectDiagnosticsUpdated(project, stateSet, data.Items);
+                            RaiseProjectDiagnosticsUpdatedIfNeeded(project, stateSet, ImmutableArray<DiagnosticData>.Empty, data.Items);
                             continue;
                         }
 
@@ -383,7 +420,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
         private static async Task PersistProjectData(Project project, DiagnosticState state, AnalysisData data)
         {
             // TODO: Cancellation is not allowed here to prevent data inconsistency. But there is still a possibility of data inconsistency due to
-            //       things like exception. For now, I am letting it go and let v2 engine take care of it properly. If v2 doesnt come online soon enough
+            //       things like exception. For now, I am letting it go and let v2 engine take care of it properly. If v2 doesn't come online soon enough
             //       more refactoring is required on project state.
 
             // clear all existing data
@@ -434,7 +471,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
                     var solutionArgs = new SolutionArgument(null, documentId.ProjectId, documentId);
                     for (var stateType = 0; stateType < s_stateTypeCount; stateType++)
                     {
-                        RaiseDiagnosticsUpdated((StateType)stateType, documentId, stateSet, solutionArgs, ImmutableArray<DiagnosticData>.Empty);
+                        RaiseDiagnosticsRemoved((StateType)stateType, documentId, stateSet, solutionArgs);
                     }
                 }
             }
@@ -449,7 +486,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
                     stateSet.Remove(projectId);
 
                     var solutionArgs = new SolutionArgument(null, projectId, null);
-                    RaiseDiagnosticsUpdated(StateType.Project, projectId, stateSet, solutionArgs, ImmutableArray<DiagnosticData>.Empty);
+                    RaiseDiagnosticsRemoved(StateType.Project, projectId, stateSet, solutionArgs);
                 }
             }
 
@@ -476,7 +513,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
 
         private bool ShouldRunAnalyzerForClosedFile(CompilationOptions options, bool openedDocument, DiagnosticAnalyzer analyzer)
         {
-            // we have opened document, doesnt matter
+            // we have opened document, doesn't matter
             if (openedDocument || analyzer.IsCompilerAnalyzer())
             {
                 return true;
@@ -592,6 +629,11 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
                    project.CanReusePersistedDependentSemanticVersion(versions.ProjectVersion, versions.DataVersion, existingData.DataVersion);
         }
 
+        private void RaiseDiagnosticsCreatedFromCacheIfNeeded(StateType type, Document document, StateSet stateSet, ImmutableArray<DiagnosticData> items)
+        {
+            RaiseDocumentDiagnosticsUpdatedIfNeeded(type, document, stateSet, ImmutableArray<DiagnosticData>.Empty, items);
+        }
+
         private void RaiseDocumentDiagnosticsUpdatedIfNeeded(
             StateType type, Document document, StateSet stateSet, ImmutableArray<DiagnosticData> existingItems, ImmutableArray<DiagnosticData> newItems)
         {
@@ -601,7 +643,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
                 return;
             }
 
-            RaiseDiagnosticsUpdated(type, document.Id, stateSet, new SolutionArgument(document), newItems);
+            RaiseDiagnosticsCreated(type, document.Id, stateSet, new SolutionArgument(document), newItems);
         }
 
         private void RaiseProjectDiagnosticsUpdatedIfNeeded(
@@ -630,13 +672,13 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
             {
                 if (documentId == null)
                 {
-                    RaiseDiagnosticsUpdated(StateType.Project, project.Id, stateSet, new SolutionArgument(project), ImmutableArray<DiagnosticData>.Empty);
+                    RaiseDiagnosticsRemoved(StateType.Project, project.Id, stateSet, new SolutionArgument(project));
                     continue;
                 }
 
                 var document = project.GetDocument(documentId);
                 var argument = documentId == null ? new SolutionArgument(null, documentId.ProjectId, documentId) : new SolutionArgument(document);
-                RaiseDiagnosticsUpdated(StateType.Project, documentId, stateSet, argument, ImmutableArray<DiagnosticData>.Empty);
+                RaiseDiagnosticsRemoved(StateType.Project, documentId, stateSet, argument);
             }
         }
 
@@ -647,11 +689,11 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
             {
                 if (kv.Key == null)
                 {
-                    RaiseDiagnosticsUpdated(StateType.Project, project.Id, stateSet, new SolutionArgument(project), kv.ToImmutableArrayOrEmpty());
+                    RaiseDiagnosticsCreated(StateType.Project, project.Id, stateSet, new SolutionArgument(project), kv.ToImmutableArrayOrEmpty());
                     continue;
                 }
 
-                RaiseDiagnosticsUpdated(StateType.Project, kv.Key, stateSet, new SolutionArgument(project.GetDocument(kv.Key)), kv.ToImmutableArrayOrEmpty());
+                RaiseDiagnosticsCreated(StateType.Project, kv.Key, stateSet, new SolutionArgument(project.GetDocument(kv.Key)), kv.ToImmutableArrayOrEmpty());
             }
         }
 
@@ -660,7 +702,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
             return lookup.Contains(documentId) ? lookup[documentId].ToImmutableArrayOrEmpty() : ImmutableArray<DiagnosticData>.Empty;
         }
 
-        private void RaiseDiagnosticsUpdated(
+        private void RaiseDiagnosticsCreated(
             StateType type, object key, StateSet stateSet, SolutionArgument solution, ImmutableArray<DiagnosticData> diagnostics)
         {
             if (Owner == null)
@@ -669,11 +711,32 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
             }
 
             // get right arg id for the given analyzer
-            var id = stateSet.ErrorSourceName != null ?
-                new HostAnalyzerKey(stateSet.Analyzer, type, key, stateSet.ErrorSourceName) : (object)new ArgumentKey(stateSet.Analyzer, type, key);
+            var id = CreateArgumentKey(type, key, stateSet);
 
             Owner.RaiseDiagnosticsUpdated(this,
-                new DiagnosticsUpdatedArgs(id, Workspace, solution.Solution, solution.ProjectId, solution.DocumentId, diagnostics));
+                DiagnosticsUpdatedArgs.DiagnosticsCreated(id, Workspace, solution.Solution, solution.ProjectId, solution.DocumentId, diagnostics));
+        }
+
+        private static ArgumentKey CreateArgumentKey(StateType type, object key, StateSet stateSet)
+        {
+            return stateSet.ErrorSourceName != null
+                ? new HostAnalyzerKey(stateSet.Analyzer, type, key, stateSet.ErrorSourceName)
+                : new ArgumentKey(stateSet.Analyzer, type, key);
+        }
+
+        private void RaiseDiagnosticsRemoved(
+            StateType type, object key, StateSet stateSet, SolutionArgument solution)
+        {
+            if (Owner == null)
+            {
+                return;
+            }
+
+            // get right arg id for the given analyzer
+            var id = CreateArgumentKey(type, key, stateSet);
+
+            Owner.RaiseDiagnosticsUpdated(this,
+                DiagnosticsUpdatedArgs.DiagnosticsRemoved(id, Workspace, solution.Solution, solution.ProjectId, solution.DocumentId));
         }
 
         private ImmutableArray<DiagnosticData> UpdateDocumentDiagnostics(
@@ -920,7 +983,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
                 var documentId = document.Id;
                 var solutionArgs = new SolutionArgument(document);
 
-                RaiseDiagnosticsUpdated(type, document.Id, stateSet, solutionArgs, ImmutableArray<DiagnosticData>.Empty);
+                RaiseDiagnosticsRemoved(type, document.Id, stateSet, solutionArgs);
             }
         }
 
@@ -947,7 +1010,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics.EngineV1
 
             // raise diagnostic updated event
             var solutionArgs = new SolutionArgument(project);
-            RaiseDiagnosticsUpdated(StateType.Project, project.Id, stateSet, solutionArgs, ImmutableArray<DiagnosticData>.Empty);
+            RaiseDiagnosticsRemoved(StateType.Project, project.Id, stateSet, solutionArgs);
         }
 
         private async Task ClearExistingDiagnostics(Document document, StateSet stateSet, StateType type, CancellationToken cancellationToken)

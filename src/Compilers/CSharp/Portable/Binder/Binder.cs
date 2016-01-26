@@ -21,19 +21,22 @@ namespace Microsoft.CodeAnalysis.CSharp
 
         internal readonly BinderFlags Flags;
 
+        /// <summary>
+        /// Used to create a root binder.
+        /// </summary>
+        internal Binder(CSharpCompilation compilation)
+        {
+            Debug.Assert(compilation != null);
+            this.Flags = compilation.Options.TopLevelBinderFlags;
+            this.Compilation = compilation;
+        }
+
         internal Binder(Binder next)
         {
             Debug.Assert(next != null);
             _next = next;
             this.Flags = next.Flags;
             this.Compilation = next.Compilation;
-        }
-
-        internal Binder(CSharpCompilation compilation)
-        {
-            Debug.Assert(compilation != null);
-            this.Flags = BinderFlags.None;
-            this.Compilation = compilation;
         }
 
         protected Binder(Binder next, BinderFlags flags)
@@ -268,6 +271,11 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 return _next.ImportChain;
             }
+        }
+
+        internal virtual Imports GetImports(ConsList<Symbol> basesBeingResolved)
+        {
+            return _next.GetImports(basesBeingResolved);
         }
 
         /// <summary>

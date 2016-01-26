@@ -579,61 +579,81 @@ namespace Microsoft.CodeAnalysis.CSharp
             Debug.Assert(_moduleBeingBuiltOpt != null);
             Debug.Assert(compilationState.ModuleBuilderOpt == _moduleBeingBuiltOpt);
 
-            if (!compilationState.HasSynthesizedMethods)
+            var synthesizedMethods = compilationState.SynthesizedMethods;
+            if (synthesizedMethods == null)
             {
                 return;
             }
 
-            foreach (var methodWithBody in compilationState.SynthesizedMethods)
+            var oldImportChain = compilationState.CurrentImportChain;
+            try
             {
-                var method = methodWithBody.Method;
-
-                var lambda = method as SynthesizedLambdaMethod;
-                var variableSlotAllocatorOpt = ((object)lambda != null) ?
-                    _moduleBeingBuiltOpt.TryCreateVariableSlotAllocator(lambda, lambda.TopLevelMethod) :
-                    _moduleBeingBuiltOpt.TryCreateVariableSlotAllocator(method, method);
-
-                // We make sure that an asynchronous mutation to the diagnostic bag does not 
-                // confuse the method body generator by making a fresh bag and then loading
-                // any diagnostics emitted into it back into the main diagnostic bag.
-                var diagnosticsThisMethod = DiagnosticBag.GetInstance();
-
-                AsyncStateMachine stateMachineType;
-
-                // Synthesized methods have no ordinal stored in custom debug information (only user-defined methods have ordinals).
-                // In case of async lambdas, which synthesize a state machine type during the following rewrite, the containing method has already been uniquely named, 
-                // so there is no need to produce a unique method ordinal for the corresponding state machine type, whose name includes the (unique) containing method name.
-                const int methodOrdinal = -1;
-                BoundStatement bodyWithoutAsync = AsyncRewriter.Rewrite(methodWithBody.Body, method, methodOrdinal, variableSlotAllocatorOpt, compilationState, diagnosticsThisMethod, out stateMachineType);
-
-                MethodBody emittedBody = null;
-                if (!diagnosticsThisMethod.HasAnyErrors() && !_globalHasErrors)
+                foreach (var methodWithBody in synthesizedMethods)
                 {
-                    emittedBody = GenerateMethodBody(
-                        _moduleBeingBuiltOpt,
-                        method,
-                        methodOrdinal,
-                        bodyWithoutAsync,
-                        ImmutableArray<LambdaDebugInfo>.Empty,
-                        ImmutableArray<ClosureDebugInfo>.Empty,
-                        stateMachineType,
-                        variableSlotAllocatorOpt,
-                        diagnosticsThisMethod,
-                        _debugDocumentProvider,
-                        methodWithBody.ImportChainOpt,
-                        emittingPdb: _emittingPdb);
+                    var importChain = methodWithBody.ImportChainOpt;
+                    compilationState.CurrentImportChain = importChain;
+
+                    var method = methodWithBody.Method;
+                    var lambda = method as SynthesizedLambdaMethod;
+                    var variableSlotAllocatorOpt = ((object)lambda != null) ?
+                        _moduleBeingBuiltOpt.TryCreateVariableSlotAllocator(lambda, lambda.TopLevelMethod) :
+                        _moduleBeingBuiltOpt.TryCreateVariableSlotAllocator(method, method);
+
+                    // We make sure that an asynchronous mutation to the diagnostic bag does not 
+                    // confuse the method body generator by making a fresh bag and then loading
+                    // any diagnostics emitted into it back into the main diagnostic bag.
+                    var diagnosticsThisMethod = DiagnosticBag.GetInstance();
+
+                    AsyncStateMachine stateMachineType;
+
+                    // Synthesized methods have no ordinal stored in custom debug information (only user-defined methods have ordinals).
+                    // In case of async lambdas, which synthesize a state machine type during the following rewrite, the containing method has already been uniquely named, 
+                    // so there is no need to produce a unique method ordinal for the corresponding state machine type, whose name includes the (unique) containing method name.
+                    const int methodOrdinal = -1;
+                    MethodBody emittedBody = null;
+
+                    try
+                    {
+                        // Why is this here when IteratorRewriter is earlier?
+                        BoundStatement bodyWithoutAsync = AsyncRewriter.Rewrite(methodWithBody.Body, method, methodOrdinal, variableSlotAllocatorOpt, compilationState, diagnosticsThisMethod, out stateMachineType);
+
+                        if (!diagnosticsThisMethod.HasAnyErrors() && !_globalHasErrors)
+                        {
+                            emittedBody = GenerateMethodBody(
+                                _moduleBeingBuiltOpt,
+                                method,
+                                methodOrdinal,
+                                bodyWithoutAsync,
+                                ImmutableArray<LambdaDebugInfo>.Empty,
+                                ImmutableArray<ClosureDebugInfo>.Empty,
+                                stateMachineType,
+                                variableSlotAllocatorOpt,
+                                diagnosticsThisMethod,
+                                _debugDocumentProvider,
+                                method.GenerateDebugInfo ? importChain : null,
+                                emittingPdb: _emittingPdb);
+                        }
+                    }
+                    catch (BoundTreeVisitor.CancelledByStackGuardException ex)
+                    {
+                        ex.AddAnError(_diagnostics);
+                    }
+
+                    _diagnostics.AddRange(diagnosticsThisMethod);
+                    diagnosticsThisMethod.Free();
+
+                    // error while generating IL
+                    if (emittedBody == null)
+                    {
+                        break;
+                    }
+
+                    _moduleBeingBuiltOpt.SetMethodBody(method, emittedBody);
                 }
-
-                _diagnostics.AddRange(diagnosticsThisMethod);
-                diagnosticsThisMethod.Free();
-
-                // error while generating IL
-                if (emittedBody == null)
-                {
-                    break;
-                }
-
-                _moduleBeingBuiltOpt.SetMethodBody(method, emittedBody);
+            }
+            finally
+            {
+                compilationState.CurrentImportChain = oldImportChain;
             }
         }
 
@@ -792,9 +812,6 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             try
             {
-                bool includeInitializersInBody;
-                BoundBlock body;
-
                 // if synthesized method returns its body in lowered form
                 if (methodSymbol.SynthesizesLoweredBoundBody)
                 {
@@ -813,21 +830,24 @@ namespace Microsoft.CodeAnalysis.CSharp
                     return;
                 }
 
+                bool includeInitializersInBody = false;
+                BoundBlock body;
+                bool originalBodyNested = false;
+
                 // initializers that have been analyzed but not yet lowered.
                 BoundStatementList analyzedInitializers = null;
 
-                ImportChain importChain;
+                ImportChain importChain = null;
+                var hasTrailingExpression = false;
 
                 if (methodSymbol.IsScriptConstructor)
                 {
                     body = new BoundBlock(methodSymbol.GetNonNullSyntaxNode(), ImmutableArray<LocalSymbol>.Empty, ImmutableArray<BoundStatement>.Empty) { WasCompilerGenerated = true };
-                    includeInitializersInBody = false;
-                    importChain = null;
                 }
                 else if (methodSymbol.IsScriptInitializer)
                 {
                     // rewrite top-level statements and script variable declarations to a list of statements and assignments, respectively:
-                    var initializerStatements = InitializerRewriter.RewriteScriptInitializer(processedInitializers.BoundInitializers, (SynthesizedInteractiveInitializerMethod)methodSymbol);
+                    var initializerStatements = InitializerRewriter.RewriteScriptInitializer(processedInitializers.BoundInitializers, (SynthesizedInteractiveInitializerMethod)methodSymbol, out hasTrailingExpression);
 
                     // the lowered script initializers should not be treated as initializers anymore but as a method body:
                     body = new BoundBlock(initializerStatements.Syntax, ImmutableArray<LocalSymbol>.Empty, initializerStatements.Statements) { WasCompilerGenerated = true };
@@ -836,9 +856,6 @@ namespace Microsoft.CodeAnalysis.CSharp
                     DataFlowPass.Analyze(_compilation, methodSymbol, initializerStatements, unusedDiagnostics, requireOutParamsAssigned: false);
                     DiagnosticsPass.IssueDiagnostics(_compilation, initializerStatements, unusedDiagnostics, methodSymbol);
                     unusedDiagnostics.Free();
-
-                    includeInitializersInBody = false;
-                    importChain = null;
                 }
                 else
                 {
@@ -846,7 +863,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                     includeInitializersInBody = !processedInitializers.BoundInitializers.IsDefaultOrEmpty &&
                                                 !HasThisConstructorInitializer(methodSymbol);
 
-                    body = BindMethodBody(methodSymbol, compilationState, diagsForCurrentMethod, out importChain);
+                    body = BindMethodBody(methodSymbol, compilationState, diagsForCurrentMethod, out importChain, out originalBodyNested);
 
                     // lower initializers just once. the lowered tree will be reused when emitting all constructors 
                     // with field initializers. Once lowered, these initializers will be stashed in processedInitializers.LoweredInitializers
@@ -901,7 +918,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 BoundBlock flowAnalyzedBody = null;
                 if (body != null)
                 {
-                    flowAnalyzedBody = FlowAnalysisPass.Rewrite(methodSymbol, body, diagsForCurrentMethod);
+                    flowAnalyzedBody = FlowAnalysisPass.Rewrite(methodSymbol, body, diagsForCurrentMethod, hasTrailingExpression: hasTrailingExpression, originalBodyNested: originalBodyNested);
                 }
 
                 bool hasErrors = _hasDeclarationErrors || diagsForCurrentMethod.HasAnyErrors() || processedInitializers.HasErrors;
@@ -1146,89 +1163,97 @@ namespace Microsoft.CodeAnalysis.CSharp
                 return body;
             }
 
-            bool sawLambdas;
-            bool sawAwaitInExceptionHandler;
-            var loweredBody = LocalRewriter.Rewrite(
-                method.DeclaringCompilation,
-                method,
-                methodOrdinal,
-                method.ContainingType,
-                body,
-                compilationState,
-                previousSubmissionFields: previousSubmissionFields,
-                allowOmissionOfConditionalCalls: true,
-                diagnostics: diagnostics,
-                sawLambdas: out sawLambdas,
-                sawAwaitInExceptionHandler: out sawAwaitInExceptionHandler);
-
-            if (loweredBody.HasErrors)
+            try
             {
-                return loweredBody;
-            }
-
-            if (sawAwaitInExceptionHandler)
-            {
-                // If we have awaits in handlers, we need to 
-                // replace handlers with synthetic ones which can be consumed by async rewriter.
-                // The reason why this rewrite happens before the lambda rewrite 
-                // is that we may need access to exception locals and it would be fairly hard to do
-                // if these locals are captured into closures (possibly nested ones).
-                Debug.Assert(!method.IsIterator);
-                loweredBody = AsyncExceptionHandlerRewriter.Rewrite(
-                    method,
-                    method.ContainingType,
-                    loweredBody,
-                    compilationState,
-                    diagnostics);
-            }
-
-            if (loweredBody.HasErrors)
-            {
-                return loweredBody;
-            }
-
-            if (lazyVariableSlotAllocator == null)
-            {
-                lazyVariableSlotAllocator = compilationState.ModuleBuilderOpt.TryCreateVariableSlotAllocator(method, method);
-            }
-
-            BoundStatement bodyWithoutLambdas = loweredBody;
-            if (sawLambdas)
-            {
-                bodyWithoutLambdas = LambdaRewriter.Rewrite(
-                    loweredBody,
-                    method.ContainingType,
-                    method.ThisParameter,
+                bool sawLambdas;
+                bool sawAwaitInExceptionHandler;
+                var loweredBody = LocalRewriter.Rewrite(
+                    method.DeclaringCompilation,
                     method,
                     methodOrdinal,
-                    lambdaDebugInfoBuilder,
-                    closureDebugInfoBuilder,
-                    lazyVariableSlotAllocator,
+                    method.ContainingType,
+                    body,
                     compilationState,
-                    diagnostics,
-                    assignLocals: false);
-            }
+                    previousSubmissionFields: previousSubmissionFields,
+                    allowOmissionOfConditionalCalls: true,
+                    diagnostics: diagnostics,
+                    sawLambdas: out sawLambdas,
+                    sawAwaitInExceptionHandler: out sawAwaitInExceptionHandler);
 
-            if (bodyWithoutLambdas.HasErrors)
+                if (loweredBody.HasErrors)
+                {
+                    return loweredBody;
+                }
+
+                if (sawAwaitInExceptionHandler)
+                {
+                    // If we have awaits in handlers, we need to 
+                    // replace handlers with synthetic ones which can be consumed by async rewriter.
+                    // The reason why this rewrite happens before the lambda rewrite 
+                    // is that we may need access to exception locals and it would be fairly hard to do
+                    // if these locals are captured into closures (possibly nested ones).
+                    Debug.Assert(!method.IsIterator);
+                    loweredBody = AsyncExceptionHandlerRewriter.Rewrite(
+                        method,
+                        method.ContainingType,
+                        loweredBody,
+                        compilationState,
+                        diagnostics);
+                }
+
+                if (loweredBody.HasErrors)
+                {
+                    return loweredBody;
+                }
+
+                if (lazyVariableSlotAllocator == null)
+                {
+                    lazyVariableSlotAllocator = compilationState.ModuleBuilderOpt.TryCreateVariableSlotAllocator(method, method);
+                }
+
+                BoundStatement bodyWithoutLambdas = loweredBody;
+                if (sawLambdas)
+                {
+                    bodyWithoutLambdas = LambdaRewriter.Rewrite(
+                        loweredBody,
+                        method.ContainingType,
+                        method.ThisParameter,
+                        method,
+                        methodOrdinal,
+                        lambdaDebugInfoBuilder,
+                        closureDebugInfoBuilder,
+                        lazyVariableSlotAllocator,
+                        compilationState,
+                        diagnostics,
+                        assignLocals: false);
+                }
+
+                if (bodyWithoutLambdas.HasErrors)
+                {
+                    return bodyWithoutLambdas;
+                }
+
+                IteratorStateMachine iteratorStateMachine;
+                BoundStatement bodyWithoutIterators = IteratorRewriter.Rewrite(bodyWithoutLambdas, method, methodOrdinal, lazyVariableSlotAllocator, compilationState, diagnostics, out iteratorStateMachine);
+
+                if (bodyWithoutIterators.HasErrors)
+                {
+                    return bodyWithoutIterators;
+                }
+
+                AsyncStateMachine asyncStateMachine;
+                BoundStatement bodyWithoutAsync = AsyncRewriter.Rewrite(bodyWithoutIterators, method, methodOrdinal, lazyVariableSlotAllocator, compilationState, diagnostics, out asyncStateMachine);
+
+                Debug.Assert(iteratorStateMachine == null || asyncStateMachine == null);
+                stateMachineTypeOpt = (StateMachineTypeSymbol)iteratorStateMachine ?? asyncStateMachine;
+
+                return bodyWithoutAsync;
+            }
+            catch (BoundTreeVisitor.CancelledByStackGuardException ex)
             {
-                return bodyWithoutLambdas;
+                ex.AddAnError(diagnostics);
+                return new BoundBadStatement(body.Syntax, ImmutableArray.Create<BoundNode>(body), hasErrors: true);
             }
-
-            IteratorStateMachine iteratorStateMachine;
-            BoundStatement bodyWithoutIterators = IteratorRewriter.Rewrite(bodyWithoutLambdas, method, methodOrdinal, lazyVariableSlotAllocator, compilationState, diagnostics, out iteratorStateMachine);
-
-            if (bodyWithoutIterators.HasErrors)
-            {
-                return bodyWithoutIterators;
-            }
-
-            AsyncStateMachine asyncStateMachine;
-            BoundStatement bodyWithoutAsync = AsyncRewriter.Rewrite(bodyWithoutIterators, method, methodOrdinal, lazyVariableSlotAllocator, compilationState, diagnostics, out asyncStateMachine);
-
-            Debug.Assert(iteratorStateMachine == null || asyncStateMachine == null);
-            stateMachineTypeOpt = (StateMachineTypeSymbol)iteratorStateMachine ?? asyncStateMachine;
-
-            return bodyWithoutAsync;
         }
 
         private static MethodBody GenerateMethodBody(
@@ -1259,6 +1284,12 @@ namespace Microsoft.CodeAnalysis.CSharp
                 Cci.AsyncMethodBodyDebugInfo asyncDebugInfo = null;
 
                 var codeGen = new CodeGen.CodeGenerator(method, block, builder, moduleBuilder, diagnosticsForThisMethod, optimizations, emittingPdb);
+
+                if (diagnosticsForThisMethod.HasAnyErrors())
+                {
+                    // we are done here. Since there were errors we should not emit anything.
+                    return null;
+                }
 
                 // We need to save additional debugging information for MoveNext of an async state machine.
                 var stateMachineMethod = method as SynthesizedStateMachineMethod;
@@ -1420,36 +1451,16 @@ namespace Microsoft.CodeAnalysis.CSharp
         // NOTE: can return null if the method has no body.
         internal static BoundBlock BindMethodBody(MethodSymbol method, TypeCompilationState compilationState, DiagnosticBag diagnostics)
         {
-            ImportChain unused;
-            return BindMethodBody(method, compilationState, diagnostics, out unused);
+            ImportChain importChain;
+            bool originalBodyNested;
+            return BindMethodBody(method, compilationState, diagnostics, out importChain, out originalBodyNested);
         }
 
         // NOTE: can return null if the method has no body.
-        private static BoundBlock BindMethodBody(MethodSymbol method, TypeCompilationState compilationState, DiagnosticBag diagnostics, out ImportChain importChain)
+        private static BoundBlock BindMethodBody(MethodSymbol method, TypeCompilationState compilationState, DiagnosticBag diagnostics, out ImportChain importChain, out bool originalBodyNested)
         {
+            originalBodyNested = false;
             importChain = null;
-
-            var compilation = method.DeclaringCompilation;
-            BoundStatement constructorInitializer = null;
-
-            // delegates have constructors but not constructor initializers
-            if (method.MethodKind == MethodKind.Constructor && !method.ContainingType.IsDelegateType() && !method.IsExtern)
-            {
-                var initializerInvocation = BindConstructorInitializer(method, diagnostics, compilation);
-
-                if (initializerInvocation != null)
-                {
-                    var ctorCall = initializerInvocation as BoundCall;
-                    if (ctorCall != null && !ctorCall.HasAnyErrors && ctorCall.Method != method && ctorCall.Method.ContainingType == method.ContainingType)
-                    {
-                        // Detect and report indirect cycles in the ctor-initializer call graph.
-                        compilationState.ReportCtorInitializerCycles(method, ctorCall.Method, ctorCall.Syntax, diagnostics);
-                    }
-
-                    constructorInitializer = new BoundExpressionStatement(initializerInvocation.Syntax, initializerInvocation) { WasCompilerGenerated = true };
-                    Debug.Assert(initializerInvocation.HasAnyErrors || constructorInitializer.IsConstructorInitializer(), "Please keep this bound node in sync with BoundNodeExtensions.IsConstructorInitializer.");
-                }
-            }
 
             BoundBlock body;
 
@@ -1473,6 +1484,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                     return null;
                 }
 
+                var compilation = method.DeclaringCompilation;
                 var factory = compilation.GetBinderFactory(sourceMethod.SyntaxTree);
 
                 var blockSyntax = sourceMethod.BodySyntax as BlockSyntax;
@@ -1483,7 +1495,13 @@ namespace Microsoft.CodeAnalysis.CSharp
 
                     Binder binder = new ExecutableCodeBinder(blockSyntax, sourceMethod, inMethodBinder);
                     body = binder.BindBlock(blockSyntax, diagnostics);
+
                     importChain = binder.ImportChain;
+
+                    if (method.MethodKind == MethodKind.Destructor)
+                    {
+                        return MethodBodySynthesizer.ConstructDestructorBody(method, body);
+                    }
 
                     if (inMethodBinder.IsDirectlyInIterator)
                     {
@@ -1535,27 +1553,19 @@ namespace Microsoft.CodeAnalysis.CSharp
             }
             else
             {
-                //  synthesized methods should return their bound bodies 
+                // synthesized methods should return their bound bodies
                 body = null;
             }
 
+            var constructorInitializer = BindConstructorInitializerIfAny(method, compilationState, diagnostics);
             ImmutableArray<BoundStatement> statements;
 
             if (constructorInitializer == null)
             {
                 if (body != null)
                 {
-                    // most common case - we just have a single block for the body.
-                    if (method.MethodKind == MethodKind.Destructor)
-                    {
-                        return MethodBodySynthesizer.ConstructDestructorBody(method, body);
-                    }
-                    else
-                    {
-                        return body;
-                    }
+                    return body;
                 }
-
                 statements = ImmutableArray<BoundStatement>.Empty;
             }
             else if (body == null)
@@ -1565,9 +1575,36 @@ namespace Microsoft.CodeAnalysis.CSharp
             else
             {
                 statements = ImmutableArray.Create(constructorInitializer, body);
+                originalBodyNested = true;
             }
 
             return new BoundBlock(method.GetNonNullSyntaxNode(), ImmutableArray<LocalSymbol>.Empty, statements) { WasCompilerGenerated = true };
+        }
+
+        private static BoundStatement BindConstructorInitializerIfAny(MethodSymbol method, TypeCompilationState compilationState, DiagnosticBag diagnostics)
+        {
+            // delegates have constructors but not constructor initializers
+            if (method.MethodKind == MethodKind.Constructor && !method.ContainingType.IsDelegateType() && !method.IsExtern)
+            {
+                var compilation = method.DeclaringCompilation;
+                var initializerInvocation = BindConstructorInitializer(method, diagnostics, compilation);
+
+                if (initializerInvocation != null)
+                {
+                    var ctorCall = initializerInvocation as BoundCall;
+                    if (ctorCall != null && !ctorCall.HasAnyErrors && ctorCall.Method != method && ctorCall.Method.ContainingType == method.ContainingType)
+                    {
+                        // Detect and report indirect cycles in the ctor-initializer call graph.
+                        compilationState.ReportCtorInitializerCycles(method, ctorCall.Method, ctorCall.Syntax, diagnostics);
+                    }
+
+                    var constructorInitializer = new BoundExpressionStatement(initializerInvocation.Syntax, initializerInvocation) { WasCompilerGenerated = true };
+                    Debug.Assert(initializerInvocation.HasAnyErrors || constructorInitializer.IsConstructorInitializer(), "Please keep this bound node in sync with BoundNodeExtensions.IsConstructorInitializer.");
+                    return constructorInitializer;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

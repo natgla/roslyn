@@ -118,7 +118,7 @@ class C
                 assemblyName: GetUniqueName(),
                 references: ImmutableArray.Create(MscorlibRef),
                 exeBytes: exeBytes.ToArray(),
-                symReader: new SymReader(pdbBytes.ToArray()));
+                symReader: SymReaderFactory.CreateReader(pdbBytes));
             var context = CreateMethodContext(runtime, methodName: "C.Test");
 
             Assert.Equal(DkmEvaluationResultAccessType.Private, GetResultProperties(context, "Private").AccessType);
@@ -301,7 +301,7 @@ class C
             string error;
             var testData = new CompilationTestData();
             ImmutableArray<AssemblyIdentity> missingAssemblyIdentities;
-            context.CompileAssignment("P", "1", NoAliases, DiagnosticFormatter.Instance, out resultProperties, out error, out missingAssemblyIdentities, EnsureEnglishUICulture.PreferredOrNull, testData);
+            context.CompileAssignment("P", "1", NoAliases, DebuggerDiagnosticFormatter.Instance, out resultProperties, out error, out missingAssemblyIdentities, EnsureEnglishUICulture.PreferredOrNull, testData);
             Assert.Null(error);
             Assert.Empty(missingAssemblyIdentities);
 
@@ -337,7 +337,7 @@ class C
                 "int z = 1;",
                 DkmEvaluationFlags.None,
                 NoAliases,
-                DiagnosticFormatter.Instance,
+                DebuggerDiagnosticFormatter.Instance,
                 out resultProperties,
                 out error,
                 out missingAssemblyIdentities,

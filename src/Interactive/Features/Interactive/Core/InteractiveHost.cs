@@ -2,6 +2,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
@@ -105,7 +106,7 @@ namespace Microsoft.CodeAnalysis.Interactive
             return null;
         }
 
-        private RemoteService TryStartProcess(CancellationToken cancellationToken)
+        private RemoteService TryStartProcess(CultureInfo culture, CancellationToken cancellationToken)
         {
             Process newProcess = null;
             int newProcessId = -1;
@@ -150,13 +151,7 @@ namespace Microsoft.CodeAnalysis.Interactive
                 newProcess.EnableRaisingEvents = true;
 
                 newProcess.Start();
-
-                // test hook:
-                var processCreated = InteractiveHostProcessCreated;
-                if (processCreated != null)
-                {
-                    processCreated(newProcess);
-                }
+                InteractiveHostProcessCreated?.Invoke(newProcess);
 
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -191,7 +186,7 @@ namespace Microsoft.CodeAnalysis.Interactive
 
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    newService.Initialize(_replServiceProviderType);
+                    newService.Initialize(_replServiceProviderType, culture.Name);
                 }
                 catch (RemotingException) when (!CheckAlive(newProcess))
                 {
@@ -303,11 +298,7 @@ namespace Microsoft.CodeAnalysis.Interactive
 
         internal void OnOutputReceived(bool error, char[] buffer, int count)
         {
-            var notification = error ? ErrorOutputReceived : OutputReceived;
-            if (notification != null)
-            {
-                notification(buffer, count);
-            }
+            (error ? ErrorOutputReceived : OutputReceived)?.Invoke(buffer, count);
 
             var writer = error ? ErrorOutput : Output;
             writer.Write(buffer, 0, count);
@@ -432,8 +423,10 @@ namespace Microsoft.CodeAnalysis.Interactive
         {
             try
             {
+                var options = optionsOpt ?? _lazyRemoteService?.Options ?? new InteractiveHostOptions(null, CultureInfo.CurrentUICulture);
+
                 // replace the existing service with a new one:
-                var newService = CreateRemoteService(optionsOpt ?? _lazyRemoteService?.Options ?? InteractiveHostOptions.Default, skipInitialization: false);
+                var newService = CreateRemoteService(options, skipInitialization: false);
 
                 LazyRemoteService oldService = Interlocked.Exchange(ref _lazyRemoteService, newService);
                 if (oldService != null)

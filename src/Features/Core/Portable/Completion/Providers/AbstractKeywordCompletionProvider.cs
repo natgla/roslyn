@@ -77,7 +77,8 @@ namespace Microsoft.CodeAnalysis.Completion.Providers
                 filterSpan: filterSpan,
                 descriptionFactory: c => Task.FromResult(keyword.DescriptionFactory(c)),
                 glyph: Glyph.Keyword,
-                isIntrinsic: keyword.IsIntrinsic);
+                isIntrinsic: keyword.IsIntrinsic,
+                preselect: keyword.ShouldPreselect);
         }
 
         protected virtual async Task<IEnumerable<RecommendedKeyword>> RecommendKeywordsAsync(
@@ -99,7 +100,7 @@ namespace Microsoft.CodeAnalysis.Completion.Providers
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var keywords = recommender.RecommendKeywords(position, context, cancellationToken);
+                var keywords = await recommender.RecommendKeywordsAsync(position, context, cancellationToken).ConfigureAwait(false);
                 if (keywords != null)
                 {
                     set.AddRange(keywords);

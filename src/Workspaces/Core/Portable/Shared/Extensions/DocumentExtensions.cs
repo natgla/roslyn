@@ -20,7 +20,7 @@ namespace Microsoft.CodeAnalysis.Shared.Extensions
     {
         public static TLanguageService GetLanguageService<TLanguageService>(this Document document) where TLanguageService : class, ILanguageService
         {
-            return document.Project.LanguageServices.GetService<TLanguageService>();
+            return document?.Project?.LanguageServices?.GetService<TLanguageService>();
         }
 
         public static bool IsOpen(this Document document)
@@ -105,7 +105,7 @@ namespace Microsoft.CodeAnalysis.Shared.Extensions
         }
 
 #if DEBUG
-        public static async Task<bool> HasAnyErrors(this Document document, CancellationToken cancellationToken, List<string> ignoreErrorCode = null)
+        public static async Task<bool> HasAnyErrorsAsync(this Document document, CancellationToken cancellationToken, List<string> ignoreErrorCode = null)
         {
             if (!document.SupportsSemanticModel)
             {
@@ -122,7 +122,7 @@ namespace Microsoft.CodeAnalysis.Shared.Extensions
         /// </summary>
         public static async Task VerifyNoErrorsAsync(this Document newDocument, string message, CancellationToken cancellationToken, List<string> ignoreErrorCodes = null)
         {
-            bool newDocumentHasErrors = await newDocument.HasAnyErrors(cancellationToken, ignoreErrorCodes).ConfigureAwait(false);
+            bool newDocumentHasErrors = await newDocument.HasAnyErrorsAsync(cancellationToken, ignoreErrorCodes).ConfigureAwait(false);
             Debug.Assert(!newDocumentHasErrors, message);
         }
 #endif

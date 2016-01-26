@@ -430,6 +430,118 @@ End Class
         End Sub
 
         <Fact()>
+        Public Sub ConstructorsWithoutInitializers()
+            Dim source =
+<compilation>
+    <file><![CDATA[
+Class C
+    Sub New()
+        Dim o As Object
+    End Sub
+    Sub New(x As Object)
+        Dim y As Object = x
+    End Sub
+End Class
+]]></file>
+</compilation>
+            Dim compilation = CreateCompilationWithMscorlib(source, TestOptions.DebugDll)
+            compilation.VerifyPdb("C..ctor",
+<symbols>
+    <methods>
+        <method containingType="C" name=".ctor">
+            <customDebugInfo>
+                <encLocalSlotMap>
+                    <slot kind="0" offset="4"/>
+                </encLocalSlotMap>
+            </customDebugInfo>
+            <sequencePoints>
+                <entry offset="0x0" startLine="2" startColumn="5" endLine="2" endColumn="14"/>
+                <entry offset="0x8" startLine="4" startColumn="5" endLine="4" endColumn="12"/>
+            </sequencePoints>
+            <scope startOffset="0x0" endOffset="0x9">
+                <currentnamespace name=""/>
+                <local name="o" il_index="0" il_start="0x0" il_end="0x9" attributes="0"/>
+            </scope>
+        </method>
+        <method containingType="C" name=".ctor" parameterNames="x">
+            <customDebugInfo>
+                <encLocalSlotMap>
+                    <slot kind="0" offset="4"/>
+                </encLocalSlotMap>
+            </customDebugInfo>
+            <sequencePoints>
+                <entry offset="0x0" startLine="5" startColumn="5" endLine="5" endColumn="25"/>
+                <entry offset="0x8" startLine="6" startColumn="13" endLine="6" endColumn="28"/>
+                <entry offset="0xf" startLine="7" startColumn="5" endLine="7" endColumn="12"/>
+            </sequencePoints>
+            <scope startOffset="0x0" endOffset="0x10">
+                <importsforward declaringType="C" methodName=".ctor"/>
+                <local name="y" il_index="0" il_start="0x0" il_end="0x10" attributes="0"/>
+            </scope>
+        </method>
+    </methods>
+</symbols>)
+        End Sub
+
+        <Fact()>
+        Public Sub ConstructorsWithInitializers()
+            Dim source =
+<compilation>
+    <file><![CDATA[
+Class C
+    Shared G As Object = 1
+    Private F As Object = G
+    Sub New()
+        Dim o As Object
+    End Sub
+    Sub New(x As Object)
+        Dim y As Object = x
+    End Sub
+End Class
+]]></file>
+</compilation>
+            Dim compilation = CreateCompilationWithMscorlib(source, TestOptions.DebugDll)
+            compilation.VerifyPdb("C..ctor",
+<symbols>
+    <methods>
+        <method containingType="C" name=".ctor">
+            <customDebugInfo>
+                <encLocalSlotMap>
+                    <slot kind="0" offset="4"/>
+                </encLocalSlotMap>
+            </customDebugInfo>
+            <sequencePoints>
+                <entry offset="0x0" startLine="4" startColumn="5" endLine="4" endColumn="14"/>
+                <entry offset="0x8" startLine="3" startColumn="13" endLine="3" endColumn="28"/>
+                <entry offset="0x18" startLine="6" startColumn="5" endLine="6" endColumn="12"/>
+            </sequencePoints>
+            <scope startOffset="0x0" endOffset="0x19">
+                <importsforward declaringType="C" methodName=".cctor"/>
+                <local name="o" il_index="0" il_start="0x0" il_end="0x19" attributes="0"/>
+            </scope>
+        </method>
+        <method containingType="C" name=".ctor" parameterNames="x">
+            <customDebugInfo>
+                <encLocalSlotMap>
+                    <slot kind="0" offset="4"/>
+                </encLocalSlotMap>
+            </customDebugInfo>
+            <sequencePoints>
+                <entry offset="0x0" startLine="7" startColumn="5" endLine="7" endColumn="25"/>
+                <entry offset="0x8" startLine="3" startColumn="13" endLine="3" endColumn="28"/>
+                <entry offset="0x18" startLine="8" startColumn="13" endLine="8" endColumn="28"/>
+                <entry offset="0x1f" startLine="9" startColumn="5" endLine="9" endColumn="12"/>
+            </sequencePoints>
+            <scope startOffset="0x0" endOffset="0x20">
+                <importsforward declaringType="C" methodName=".cctor"/>
+                <local name="y" il_index="0" il_start="0x0" il_end="0x20" attributes="0"/>
+            </scope>
+        </method>
+    </methods>
+</symbols>)
+        End Sub
+
+        <Fact()>
         Public Sub TryCatchFinally()
             Dim source =
 <compilation>
@@ -4236,6 +4348,99 @@ End Class
     </methods>
 </symbols>)
         End Sub
+
+        <Fact>
+        Public Sub ImportsInAsync()
+            Dim source =
+"Imports System.Linq
+Imports System.Threading.Tasks
+Class C
+    Shared Async Function F() As Task
+        Dim c = {1, 2, 3}
+        c.Select(Function(i) i)
+    End Function
+End Class"
+            Dim c = CreateCompilationWithMscorlib45AndVBRuntime({Parse(source)}, options:=TestOptions.DebugDll, references:={SystemCoreRef})
+            c.VerifyPdb("C+VB$StateMachine_1_F.MoveNext",
+<symbols>
+    <methods>
+        <method containingType="C+VB$StateMachine_1_F" name="MoveNext">
+            <customDebugInfo>
+                <encLocalSlotMap>
+                    <slot kind="27" offset="-1"/>
+                    <slot kind="temp"/>
+                </encLocalSlotMap>
+            </customDebugInfo>
+            <sequencePoints>
+                <entry offset="0x0" hidden="true"/>
+                <entry offset="0x7" startLine="4" startColumn="5" endLine="4" endColumn="38"/>
+                <entry offset="0x8" startLine="5" startColumn="13" endLine="5" endColumn="26"/>
+                <entry offset="0x1f" startLine="6" startColumn="9" endLine="6" endColumn="32"/>
+                <entry offset="0x4f" startLine="7" startColumn="5" endLine="7" endColumn="17"/>
+                <entry offset="0x51" hidden="true"/>
+                <entry offset="0x58" hidden="true"/>
+                <entry offset="0x74" startLine="7" startColumn="5" endLine="7" endColumn="17"/>
+                <entry offset="0x7e" hidden="true"/>
+            </sequencePoints>
+            <scope startOffset="0x0" endOffset="0x8b">
+                <importsforward declaringType="C+_Closure$__" methodName="_Lambda$__1-0" parameterNames="i"/>
+                <local name="$VB$ResumableLocal_c$0" il_index="0" il_start="0x0" il_end="0x8b" attributes="0"/>
+            </scope>
+            <asyncInfo>
+                <kickoffMethod declaringType="C" methodName="F"/>
+            </asyncInfo>
+        </method>
+    </methods>
+</symbols>)
+        End Sub
+
+        <Fact>
+        Public Sub ImportsInAsyncLambda()
+            Dim source =
+"Imports System.Linq
+Class C
+    Shared Sub M()
+        Dim f As System.Action =
+            Async Sub()
+                Dim c = {1, 2, 3}
+                c.Select(Function(i) i)
+            End Sub
+    End Sub
+End Class"
+            Dim c = CreateCompilationWithMscorlib45AndVBRuntime({Parse(source)}, options:=TestOptions.DebugDll, references:={SystemCoreRef})
+            c.VerifyPdb("C+_Closure$__+VB$StateMachine___Lambda$__1-0.MoveNext",
+<symbols>
+    <methods>
+        <method containingType="C+_Closure$__+VB$StateMachine___Lambda$__1-0" name="MoveNext">
+            <customDebugInfo>
+                <encLocalSlotMap>
+                    <slot kind="27" offset="38"/>
+                    <slot kind="temp"/>
+                </encLocalSlotMap>
+            </customDebugInfo>
+            <sequencePoints>
+                <entry offset="0x0" hidden="true"/>
+                <entry offset="0x7" startLine="5" startColumn="13" endLine="5" endColumn="24"/>
+                <entry offset="0x8" startLine="6" startColumn="21" endLine="6" endColumn="34"/>
+                <entry offset="0x1f" startLine="7" startColumn="17" endLine="7" endColumn="40"/>
+                <entry offset="0x4f" startLine="8" startColumn="13" endLine="8" endColumn="20"/>
+                <entry offset="0x51" hidden="true"/>
+                <entry offset="0x58" hidden="true"/>
+                <entry offset="0x74" hidden="true"/>
+            </sequencePoints>
+            <scope startOffset="0x0" endOffset="0x8b">
+                <importsforward declaringType="C" methodName="M"/>
+                <local name="$VB$ResumableLocal_c$0" il_index="0" il_start="0x0" il_end="0x8b" attributes="0"/>
+            </scope>
+            <asyncInfo>
+                <catchHandler offset="0x51"/>
+                <kickoffMethod declaringType="C+_Closure$__" methodName="_Lambda$__1-0"/>
+            </asyncInfo>
+        </method>
+    </methods>
+</symbols>)
+        End Sub
+
     End Class
 
 End Namespace

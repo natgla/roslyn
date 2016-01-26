@@ -22,7 +22,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
 
         ''' <summary>
         ''' Is there any code to execute in the given statement that could have side-effects,
-        ''' such as throwing an exception? This implementation is conserviative, in the sense
+        ''' such as throwing an exception? This implementation is conservative, in the sense
         ''' that it may return true when the statement actually may have no side effects.
         ''' </summary>
         Private Shared Function HasSideEffects(statement As BoundStatement) As Boolean
@@ -71,7 +71,14 @@ Namespace Microsoft.CodeAnalysis.VisualBasic
                 End If
 
                 If catchBlocks.IsDefaultOrEmpty AndAlso finallyBlockOpt Is Nothing Then
-                    Return tryBlock
+                    If exitLabelOpt Is Nothing Then
+                        Return tryBlock
+                    Else
+                        ' Ensure implicit label statement is materialized
+                        Return New BoundStatementList(syntaxNode,
+                                                      ImmutableArray.Create(Of BoundStatement)(tryBlock,
+                                                      New BoundLabelStatement(syntaxNode, exitLabelOpt)))
+                    End If
                 End If
             End If
 

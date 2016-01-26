@@ -2,23 +2,57 @@
 
 using System;
 using System.Collections.Immutable;
-using System.Composition;
 using System.Threading;
+using Microsoft.CodeAnalysis.Shared.TestHooks;
 using Roslyn.Utilities;
 
 namespace Microsoft.CodeAnalysis.Diagnostics
 {
-    [Export(typeof(IDiagnosticUpdateSource))]
     internal partial class DiagnosticAnalyzerService : IDiagnosticUpdateSource
     {
-        public event EventHandler<DiagnosticsUpdatedArgs> DiagnosticsUpdated;
+        private const string DiagnosticsUpdatedEventName = "DiagnosticsUpdated";
 
-        internal void RaiseDiagnosticsUpdated(object sender, DiagnosticsUpdatedArgs state)
+        private static readonly DiagnosticEventTaskScheduler s_eventScheduler = new DiagnosticEventTaskScheduler(blockingUpperBound: 100);
+
+        // use eventMap and taskQueue to serialize events
+        private readonly EventMap _eventMap;
+        private readonly SimpleTaskQueue _eventQueue;
+
+        private DiagnosticAnalyzerService(IDiagnosticUpdateSourceRegistrationService registrationService) : this()
         {
-            var handler = this.DiagnosticsUpdated;
-            if (handler != null)
+            _eventMap = new EventMap();
+
+            // use diagnostic event task scheduler so that we never flood async events queue with million of events.
+            // queue itself can handle huge number of events but we are seeing OOM due to captured data in pending events.
+            _eventQueue = new SimpleTaskQueue(s_eventScheduler);
+
+            registrationService.Register(this);
+        }
+
+        public event EventHandler<DiagnosticsUpdatedArgs> DiagnosticsUpdated
+        {
+            add
             {
-                handler(sender, state);
+                _eventMap.AddEventHandler(DiagnosticsUpdatedEventName, value);
+            }
+
+            remove
+            {
+                _eventMap.RemoveEventHandler(DiagnosticsUpdatedEventName, value);
+            }
+        }
+
+        internal void RaiseDiagnosticsUpdated(object sender, DiagnosticsUpdatedArgs args)
+        {
+            // raise serialized events
+            var ev = _eventMap.GetEventHandlers<EventHandler<DiagnosticsUpdatedArgs>>(DiagnosticsUpdatedEventName);
+            if (ev.HasHandlers)
+            {
+                var asyncToken = Listener.BeginAsyncOperation(nameof(RaiseDiagnosticsUpdated));
+                _eventQueue.ScheduleTask(() =>
+                {
+                    ev.RaiseEvent(handler => handler(sender, args));
+                }).CompletesAsyncOperation(asyncToken);
             }
         }
 

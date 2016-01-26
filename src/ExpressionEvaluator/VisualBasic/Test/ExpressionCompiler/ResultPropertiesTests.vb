@@ -111,7 +111,7 @@ End Class
                 assemblyName:=GetUniqueName(),
                 references:=ImmutableArray.Create(MscorlibRef),
                 exeBytes:=exeBytes.ToArray(),
-                symReader:=New SymReader(pdbBytes.ToArray()))
+                symReader:=SymReaderFactory.CreateReader(pdbBytes))
             Dim context = CreateMethodContext(runtime, methodName:="C.Test")
 
             Assert.Equal(DkmEvaluationResultAccessType.Private, GetResultProperties(context, "[Private]").AccessType)
@@ -266,7 +266,7 @@ End Class
                 assemblyName:=GetUniqueName(),
                 references:=ImmutableArray.Create(MscorlibRef),
                 exeBytes:=exeBytes.ToArray(),
-                symReader:=New SymReader(pdbBytes.ToArray()))
+                symReader:=SymReaderFactory.CreateReader(pdbBytes))
             Dim context = CreateMethodContext(runtime, methodName:="C.Test")
 
             Assert.Equal(DkmEvaluationResultTypeModifierFlags.None, GetResultProperties(context, "F").ModifierFlags)
@@ -295,7 +295,7 @@ End Class
                 "P",
                 "1",
                 NoAliases,
-                DiagnosticFormatter.Instance,
+                DebuggerDiagnosticFormatter.Instance,
                 resultProperties,
                 errorMessage,
                 missingAssemblyIdentities,
@@ -331,7 +331,7 @@ End Class
                 "z = 1", ' VB only supports implicit declarations
                 DkmEvaluationFlags.None,
                 NoAliases,
-                DiagnosticFormatter.Instance,
+                DebuggerDiagnosticFormatter.Instance,
                 resultProperties,
                 errorMessage,
                 missingAssemblyIdentities,

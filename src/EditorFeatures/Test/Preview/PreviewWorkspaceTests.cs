@@ -108,7 +108,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Preview
         }
 
         [WorkItem(923121)]
-        [Fact, Trait(Traits.Editor, Traits.Editors.Preview)]
+        [WpfFact, Trait(Traits.Editor, Traits.Editors.Preview)]
         public void TestPreviewOpenCloseFile()
         {
             using (var previewWorkspace = new PreviewWorkspace())
@@ -146,7 +146,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Preview
         }
 
         [WorkItem(923196)]
-        [Fact, Trait(Traits.Editor, Traits.Editors.Preview)]
+        [WpfFact, Trait(Traits.Editor, Traits.Editors.Preview)]
         public void TestPreviewDiagnostic()
         {
             var diagnosticService = TestExportProvider.ExportProviderWithCSharpAndVisualBasic.GetExportedValue<IDiagnosticAnalyzerService>() as IDiagnosticUpdateSource;
@@ -180,10 +180,10 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Preview
             }
         }
 
-        [Fact]
-        public void TestPreviewDiagnosticTagger()
+        [WpfFact]
+        public async Task TestPreviewDiagnosticTagger()
         {
-            using (var workspace = CSharpWorkspaceFactory.CreateWorkspaceFromLines("class { }"))
+            using (var workspace = await TestWorkspace.CreateCSharpAsync("class { }"))
             using (var previewWorkspace = new PreviewWorkspace(workspace.CurrentSolution))
             {
                 //// preview workspace and owner of the solution now share solution and its underlying text buffer
@@ -192,15 +192,19 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Preview
                 //// enable preview diagnostics
                 previewWorkspace.EnableDiagnostic();
 
-                var spans = SquiggleUtilities.GetErrorSpans(workspace);
-                Assert.Equal(1, spans.Count);
+                var diagnosticsAndErrorsSpans = await SquiggleUtilities.GetDiagnosticsAndErrorSpans(workspace);
+                const string AnalzyerCount = "Analyzer Count: ";
+                Assert.Equal(AnalzyerCount + 1, AnalzyerCount + diagnosticsAndErrorsSpans.Item1.Length);
+
+                const string SquigglesCount = "Squiggles Count: ";
+                Assert.Equal(SquigglesCount + 1, SquigglesCount + diagnosticsAndErrorsSpans.Item2.Count);
             }
         }
 
-        [Fact]
-        public void TestPreviewDiagnosticTaggerInPreviewPane()
+        [WpfFact]
+        public async Task TestPreviewDiagnosticTaggerInPreviewPane()
         {
-            using (var workspace = CSharpWorkspaceFactory.CreateWorkspaceFromLines("class { }"))
+            using (var workspace = await TestWorkspace.CreateCSharpAsync("class { }"))
             {
                 // set up listener to wait until diagnostic finish running
                 var diagnosticService = workspace.ExportProvider.GetExportedValue<IDiagnosticService>() as DiagnosticService;
@@ -226,8 +230,10 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Preview
                 var newDocument = oldDocument.WithText(oldText.WithChanges(new TextChange(new TextSpan(0, oldText.Length), "class C { }")));
 
                 // create a diff view
+                WpfTestCase.RequireWpfFact($"{nameof(TestPreviewDiagnosticTaggerInPreviewPane)} creates a {nameof(IWpfDifferenceViewer)}");
+
                 var previewFactoryService = workspace.ExportProvider.GetExportedValue<IPreviewFactoryService>();
-                var diffView = (IWpfDifferenceViewer)previewFactoryService.CreateChangedDocumentPreviewViewAsync(oldDocument, newDocument, CancellationToken.None).PumpingWaitResult();
+                var diffView = (IWpfDifferenceViewer)(await previewFactoryService.CreateChangedDocumentPreviewViewAsync(oldDocument, newDocument, CancellationToken.None));
 
                 var foregroundService = workspace.GetService<IForegroundNotificationService>();
                 var optionsService = workspace.Services.GetService<IOptionService>();
@@ -255,7 +261,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Preview
                         }
 
                         // wait taggers
-                        waiter.CreateWaitTask().PumpingWait();
+                        await waiter.CreateWaitTask();
 
                         // check left buffer
                         var leftSnapshot = leftBuffer.CurrentSnapshot;

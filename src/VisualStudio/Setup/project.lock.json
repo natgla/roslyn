@@ -27,7 +27,7 @@
           "lib/portable-net45+win8+wp8+wpa81/System.Composition.TypedParts.dll": {}
         }
       },
-      "Microsoft.DiaSymReader/1.0.5.1": {
+      "Microsoft.DiaSymReader/1.0.7-beta1-51221": {
         "compile": {
           "lib/net20/Microsoft.DiaSymReader.dll": {}
         },
@@ -35,7 +35,6 @@
           "lib/net20/Microsoft.DiaSymReader.dll": {}
         }
       },
-      "Microsoft.DiaSymReader.Native/1.1.0-alpha2": {},
       "System.Collections/4.0.10": {
         "compile": {
           "ref/net46/_._": {}
@@ -44,12 +43,22 @@
           "lib/net46/_._": {}
         }
       },
-      "System.Collections.Immutable/1.1.36": {
+      "System.Collections.Immutable/1.1.37": {
+        "dependencies": {
+          "System.Collections": "[4.0.0, )",
+          "System.Diagnostics.Debug": "[4.0.0, )",
+          "System.Globalization": "[4.0.0, )",
+          "System.Linq": "[4.0.0, )",
+          "System.Resources.ResourceManager": "[4.0.0, )",
+          "System.Runtime": "[4.0.0, )",
+          "System.Runtime.Extensions": "[4.0.0, )",
+          "System.Threading": "[4.0.0, )"
+        },
         "compile": {
-          "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.dll": {}
+          "lib/dotnet/System.Collections.Immutable.dll": {}
         },
         "runtime": {
-          "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.dll": {}
+          "lib/dotnet/System.Collections.Immutable.dll": {}
         }
       },
       "System.Diagnostics.Debug/4.0.10": {
@@ -68,15 +77,31 @@
           "lib/net46/_._": {}
         }
       },
-      "System.Reflection.Metadata/1.1.0-alpha-00014": {
-        "dependencies": {
-          "System.Collections.Immutable": "[1.1.36, )"
-        },
+      "System.Linq/4.0.0": {
         "compile": {
-          "lib/portable-net45+win8/System.Reflection.Metadata.dll": {}
+          "ref/net45/_._": {}
         },
         "runtime": {
-          "lib/portable-net45+win8/System.Reflection.Metadata.dll": {}
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.Metadata/1.2.0-rc2-23608": {
+        "dependencies": {
+          "System.Collections.Immutable": "[1.1.37, )"
+        },
+        "compile": {
+          "lib/dotnet5.2/System.Reflection.Metadata.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet5.2/System.Reflection.Metadata.dll": {}
+        }
+      },
+      "System.Resources.ResourceManager/4.0.0": {
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
         }
       },
       "System.Runtime/4.0.20": {
@@ -104,7 +129,7 @@
         }
       }
     },
-    ".NETFramework,Version=v4.6/win-anycpu": {
+    ".NETFramework,Version=v4.6/win7": {
       "ManagedEsent/1.9.2": {
         "compile": {
           "lib/net40/Esent.Interop.dll": {}
@@ -129,7 +154,7 @@
           "lib/portable-net45+win8+wp8+wpa81/System.Composition.TypedParts.dll": {}
         }
       },
-      "Microsoft.DiaSymReader/1.0.5.1": {
+      "Microsoft.DiaSymReader/1.0.7-beta1-51221": {
         "compile": {
           "lib/net20/Microsoft.DiaSymReader.dll": {}
         },
@@ -137,7 +162,6 @@
           "lib/net20/Microsoft.DiaSymReader.dll": {}
         }
       },
-      "Microsoft.DiaSymReader.Native/1.1.0-alpha2": {},
       "System.Collections/4.0.10": {
         "compile": {
           "ref/net46/_._": {}
@@ -146,12 +170,22 @@
           "lib/net46/_._": {}
         }
       },
-      "System.Collections.Immutable/1.1.36": {
+      "System.Collections.Immutable/1.1.37": {
+        "dependencies": {
+          "System.Collections": "[4.0.0, )",
+          "System.Diagnostics.Debug": "[4.0.0, )",
+          "System.Globalization": "[4.0.0, )",
+          "System.Linq": "[4.0.0, )",
+          "System.Resources.ResourceManager": "[4.0.0, )",
+          "System.Runtime": "[4.0.0, )",
+          "System.Runtime.Extensions": "[4.0.0, )",
+          "System.Threading": "[4.0.0, )"
+        },
         "compile": {
-          "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.dll": {}
+          "lib/dotnet/System.Collections.Immutable.dll": {}
         },
         "runtime": {
-          "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.dll": {}
+          "lib/dotnet/System.Collections.Immutable.dll": {}
         }
       },
       "System.Diagnostics.Debug/4.0.10": {
@@ -170,15 +204,158 @@
           "lib/net46/_._": {}
         }
       },
-      "System.Reflection.Metadata/1.1.0-alpha-00014": {
-        "dependencies": {
-          "System.Collections.Immutable": "[1.1.36, )"
-        },
+      "System.Linq/4.0.0": {
         "compile": {
-          "lib/portable-net45+win8/System.Reflection.Metadata.dll": {}
+          "ref/net45/_._": {}
         },
         "runtime": {
-          "lib/portable-net45+win8/System.Reflection.Metadata.dll": {}
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.Metadata/1.2.0-rc2-23608": {
+        "dependencies": {
+          "System.Collections.Immutable": "[1.1.37, )"
+        },
+        "compile": {
+          "lib/dotnet5.2/System.Reflection.Metadata.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet5.2/System.Reflection.Metadata.dll": {}
+        }
+      },
+      "System.Resources.ResourceManager/4.0.0": {
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Runtime/4.0.20": {
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Runtime.Extensions/4.0.10": {
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Threading/4.0.10": {
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      }
+    },
+    ".NETFramework,Version=v4.6/win7-anycpu": {
+      "ManagedEsent/1.9.2": {
+        "compile": {
+          "lib/net40/Esent.Interop.dll": {}
+        },
+        "runtime": {
+          "lib/net40/Esent.Interop.dll": {}
+        }
+      },
+      "Microsoft.Composition/1.0.27": {
+        "compile": {
+          "lib/portable-net45+win8+wp8+wpa81/System.Composition.AttributedModel.dll": {},
+          "lib/portable-net45+win8+wp8+wpa81/System.Composition.Convention.dll": {},
+          "lib/portable-net45+win8+wp8+wpa81/System.Composition.Hosting.dll": {},
+          "lib/portable-net45+win8+wp8+wpa81/System.Composition.Runtime.dll": {},
+          "lib/portable-net45+win8+wp8+wpa81/System.Composition.TypedParts.dll": {}
+        },
+        "runtime": {
+          "lib/portable-net45+win8+wp8+wpa81/System.Composition.AttributedModel.dll": {},
+          "lib/portable-net45+win8+wp8+wpa81/System.Composition.Convention.dll": {},
+          "lib/portable-net45+win8+wp8+wpa81/System.Composition.Hosting.dll": {},
+          "lib/portable-net45+win8+wp8+wpa81/System.Composition.Runtime.dll": {},
+          "lib/portable-net45+win8+wp8+wpa81/System.Composition.TypedParts.dll": {}
+        }
+      },
+      "Microsoft.DiaSymReader/1.0.7-beta1-51221": {
+        "compile": {
+          "lib/net20/Microsoft.DiaSymReader.dll": {}
+        },
+        "runtime": {
+          "lib/net20/Microsoft.DiaSymReader.dll": {}
+        }
+      },
+      "System.Collections/4.0.10": {
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Collections.Immutable/1.1.37": {
+        "dependencies": {
+          "System.Collections": "[4.0.0, )",
+          "System.Diagnostics.Debug": "[4.0.0, )",
+          "System.Globalization": "[4.0.0, )",
+          "System.Linq": "[4.0.0, )",
+          "System.Resources.ResourceManager": "[4.0.0, )",
+          "System.Runtime": "[4.0.0, )",
+          "System.Runtime.Extensions": "[4.0.0, )",
+          "System.Threading": "[4.0.0, )"
+        },
+        "compile": {
+          "lib/dotnet/System.Collections.Immutable.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet/System.Collections.Immutable.dll": {}
+        }
+      },
+      "System.Diagnostics.Debug/4.0.10": {
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Globalization/4.0.10": {
+        "compile": {
+          "ref/net46/_._": {}
+        },
+        "runtime": {
+          "lib/net46/_._": {}
+        }
+      },
+      "System.Linq/4.0.0": {
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
+        }
+      },
+      "System.Reflection.Metadata/1.2.0-rc2-23608": {
+        "dependencies": {
+          "System.Collections.Immutable": "[1.1.37, )"
+        },
+        "compile": {
+          "lib/dotnet5.2/System.Reflection.Metadata.dll": {}
+        },
+        "runtime": {
+          "lib/dotnet5.2/System.Reflection.Metadata.dll": {}
+        }
+      },
+      "System.Resources.ResourceManager/4.0.0": {
+        "compile": {
+          "ref/net45/_._": {}
+        },
+        "runtime": {
+          "lib/net45/_._": {}
         }
       },
       "System.Runtime/4.0.20": {
@@ -244,8 +421,8 @@
         "package/services/metadata/core-properties/12e2c94035674b25b911285cc26e3260.psmdcp"
       ]
     },
-    "Microsoft.DiaSymReader/1.0.5.1": {
-      "sha512": "s3ExUWlfkWt9cHcJQgrm4mS5Lfj91B6o2G9DD1zFA1/7aihXPL8W16Hyix+joyh8g3buxsxb0snwhPKQHb9ApA==",
+    "Microsoft.DiaSymReader/1.0.7-beta1-51221": {
+      "sha512": "sQ/I7+gi4Si8K7fqyJgMswip9RNvKjUD9CmmWwzcCxnX2sMLDA5X54thgX+cQn7nF0+C35a1nAYgafDsqiPOkg==",
       "type": "Package",
       "files": [
         "[Content_Types].xml",
@@ -255,19 +432,7 @@
         "lib/portable-net45+win8/Microsoft.DiaSymReader.dll",
         "lib/portable-net45+win8/Microsoft.DiaSymReader.xml",
         "Microsoft.DiaSymReader.nuspec",
-        "package/services/metadata/core-properties/4ff7fb1418cc465f82f38fc19097827f.psmdcp"
-      ]
-    },
-    "Microsoft.DiaSymReader.Native/1.1.0-alpha2": {
-      "sha512": "D9bGkcO1+s5c0jn4R/9BD3pw4gqyaFzC7XdlYBVDTqYMqVITMDpF8xxMXN0F3nZRl1dE54RGWp5k8GVAnMhpgQ==",
-      "type": "Package",
-      "files": [
-        "[Content_Types].xml",
-        "_rels/.rels",
-        "Microsoft.DiaSymReader.Native.nuspec",
-        "package/services/metadata/core-properties/e2e1c0f9faac4ddb951a90d33184740b.psmdcp",
-        "runtimes/win/native/Microsoft.DiaSymReader.Native.amd64.dll",
-        "runtimes/win/native/Microsoft.DiaSymReader.Native.x86.dll"
+        "package/services/metadata/core-properties/2e8b0ffd43c2417296e93e7c2ee8d686.psmdcp"
       ]
     },
     "System.Collections/4.0.10": {
@@ -304,16 +469,17 @@
         "System.Collections.nuspec"
       ]
     },
-    "System.Collections.Immutable/1.1.36": {
-      "sha512": "MOlivTIeAIQPPMUPWIIoMCvZczjFRLYUWSYwqi1szu8QPyeIbsaPeI+hpXe1DzTxNwnRnmfYaoToi6kXIfSPNg==",
+    "System.Collections.Immutable/1.1.37": {
+      "sha512": "fTpqwZYBzoklTT+XjTRK8KxvmrGkYHzBiylCcKyQcxiOM8k+QvhNBxRvFHDWzy4OEP5f8/9n+xQ9mEgEXY+muA==",
       "type": "Package",
       "files": [
         "[Content_Types].xml",
         "_rels/.rels",
+        "lib/dotnet/System.Collections.Immutable.dll",
+        "lib/dotnet/System.Collections.Immutable.xml",
         "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.dll",
         "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.xml",
-        "License-Stable.rtf",
-        "package/services/metadata/core-properties/c8b7b781850445db852bd2d848380ca6.psmdcp",
+        "package/services/metadata/core-properties/a02fdeabe1114a24bba55860b8703852.psmdcp",
         "System.Collections.Immutable.nuspec"
       ]
     },
@@ -385,17 +551,85 @@
         "System.Globalization.nuspec"
       ]
     },
-    "System.Reflection.Metadata/1.1.0-alpha-00014": {
-      "sha512": "rVeIWjVoLQS0aNrGdzndZReskyfxu4EfO9BKqT5GJt0YfGtlsHB1aDPnjl4jIBDTr+WJC9YsnZg8S5sKT1X42g==",
+    "System.Linq/4.0.0": {
+      "sha512": "r6Hlc+ytE6m/9UBr+nNRRdoJEWjoeQiT3L3lXYFDHoXk3VYsRBCDNXrawcexw7KPLaH0zamQLiAb6avhZ50cGg==",
       "type": "Package",
       "files": [
         "[Content_Types].xml",
         "_rels/.rels",
+        "lib/dotnet/System.Linq.dll",
+        "lib/net45/_._",
+        "lib/netcore50/System.Linq.dll",
+        "lib/win8/_._",
+        "lib/wp80/_._",
+        "lib/wpa81/_._",
+        "package/services/metadata/core-properties/6fcde56ce4094f6a8fff4b28267da532.psmdcp",
+        "ref/dotnet/de/System.Linq.xml",
+        "ref/dotnet/es/System.Linq.xml",
+        "ref/dotnet/fr/System.Linq.xml",
+        "ref/dotnet/it/System.Linq.xml",
+        "ref/dotnet/ja/System.Linq.xml",
+        "ref/dotnet/ko/System.Linq.xml",
+        "ref/dotnet/ru/System.Linq.xml",
+        "ref/dotnet/System.Linq.dll",
+        "ref/dotnet/System.Linq.xml",
+        "ref/dotnet/zh-hans/System.Linq.xml",
+        "ref/dotnet/zh-hant/System.Linq.xml",
+        "ref/net45/_._",
+        "ref/netcore50/System.Linq.dll",
+        "ref/netcore50/System.Linq.xml",
+        "ref/win8/_._",
+        "ref/wp80/_._",
+        "ref/wpa81/_._",
+        "System.Linq.nuspec"
+      ]
+    },
+    "System.Reflection.Metadata/1.2.0-rc2-23608": {
+      "sha512": "OTjZOWW+lJqVLkLeuZNWyNGL4PDSSJZIm5XPig0TOAwag46OyoEVz5t0AvE95SXj3mCaovSVpt8FvaXMiYt91w==",
+      "type": "Package",
+      "files": [
+        "[Content_Types].xml",
+        "_rels/.rels",
+        "lib/dotnet5.2/System.Reflection.Metadata.dll",
+        "lib/dotnet5.2/System.Reflection.Metadata.xml",
         "lib/portable-net45+win8/System.Reflection.Metadata.dll",
-        "lib/portable-net45+win8/System.Reflection.Metadata.pdb",
         "lib/portable-net45+win8/System.Reflection.Metadata.xml",
-        "package/services/metadata/core-properties/a48ecf967b1540bba8edfe9af3a99ea5.psmdcp",
+        "package/services/metadata/core-properties/c3d433fae9784b3da60bd437eacfbdd6.psmdcp",
         "System.Reflection.Metadata.nuspec"
+      ]
+    },
+    "System.Resources.ResourceManager/4.0.0": {
+      "sha512": "qmqeZ4BJgjfU+G2JbrZt4Dk1LsMxO4t+f/9HarNY6w8pBgweO6jT+cknUH7c3qIrGvyUqraBhU45Eo6UtA0fAw==",
+      "type": "Package",
+      "files": [
+        "[Content_Types].xml",
+        "_rels/.rels",
+        "lib/DNXCore50/System.Resources.ResourceManager.dll",
+        "lib/net45/_._",
+        "lib/netcore50/System.Resources.ResourceManager.dll",
+        "lib/win8/_._",
+        "lib/wp80/_._",
+        "lib/wpa81/_._",
+        "package/services/metadata/core-properties/657a73ee3f09479c9fedb9538ade8eac.psmdcp",
+        "ref/dotnet/de/System.Resources.ResourceManager.xml",
+        "ref/dotnet/es/System.Resources.ResourceManager.xml",
+        "ref/dotnet/fr/System.Resources.ResourceManager.xml",
+        "ref/dotnet/it/System.Resources.ResourceManager.xml",
+        "ref/dotnet/ja/System.Resources.ResourceManager.xml",
+        "ref/dotnet/ko/System.Resources.ResourceManager.xml",
+        "ref/dotnet/ru/System.Resources.ResourceManager.xml",
+        "ref/dotnet/System.Resources.ResourceManager.dll",
+        "ref/dotnet/System.Resources.ResourceManager.xml",
+        "ref/dotnet/zh-hans/System.Resources.ResourceManager.xml",
+        "ref/dotnet/zh-hant/System.Resources.ResourceManager.xml",
+        "ref/net45/_._",
+        "ref/netcore50/System.Resources.ResourceManager.dll",
+        "ref/netcore50/System.Resources.ResourceManager.xml",
+        "ref/win8/_._",
+        "ref/wp80/_._",
+        "ref/wpa81/_._",
+        "runtimes/win8-aot/lib/netcore50/System.Resources.ResourceManager.dll",
+        "System.Resources.ResourceManager.nuspec"
       ]
     },
     "System.Runtime/4.0.20": {

@@ -80,11 +80,15 @@ namespace Microsoft.CodeAnalysis.CSharp.UnitTests
 
             TestProperty((old, value) => old.WithConcurrentBuild(value), opt => opt.ConcurrentBuild, false);
             TestProperty((old, value) => old.WithExtendedCustomDebugInformation(value), opt => opt.ExtendedCustomDebugInformation, false);
+            TestProperty((old, value) => old.WithDebugPlusMode(value), opt => opt.DebugPlusMode, true);
 
             TestProperty((old, value) => old.WithXmlReferenceResolver(value), opt => opt.XmlReferenceResolver, new XmlFileResolver(null));
             TestProperty((old, value) => old.WithMetadataReferenceResolver(value), opt => opt.MetadataReferenceResolver, new TestMetadataReferenceResolver());
             TestProperty((old, value) => old.WithAssemblyIdentityComparer(value), opt => opt.AssemblyIdentityComparer, new DesktopAssemblyIdentityComparer(new AssemblyPortabilityPolicy()));
             TestProperty((old, value) => old.WithStrongNameProvider(value), opt => opt.StrongNameProvider, new DesktopStrongNameProvider());
+
+            TestProperty((old, value) => old.WithTopLevelBinderFlags(value), opt => opt.TopLevelBinderFlags, BinderFlags.IgnoreCorLibraryDuplicatedTypes);
+            TestProperty((old, value) => old.WithMetadataImportOptions(value), opt => opt.MetadataImportOptions, MetadataImportOptions.Internal);
         }
 
         [Fact]
@@ -318,7 +322,8 @@ namespace Microsoft.CodeAnalysis.CSharp.UnitTests
             ReflectionAssert.AssertPublicAndInternalFieldsAndProperties(
                 typeof(CSharpCompilationOptions),
                 "AllowUnsafe",
-                "Usings");
+                "Usings",
+                "TopLevelBinderFlags");
         }
 
         [Fact]
@@ -345,7 +350,9 @@ namespace Microsoft.CodeAnalysis.CSharp.UnitTests
             int warningLevel = 0;
             IEnumerable<KeyValuePair<string, ReportDiagnostic>> specificDiagnosticOptions = null;
             bool concurrentBuild = false;
+            bool deterministic = false;
             bool extendedCustomDebugInformation = true;
+            bool debugPlusMode = false;
             XmlReferenceResolver xmlReferenceResolver = new XmlFileResolver(null);
             SourceReferenceResolver sourceReferenceResolver = new SourceFileResolver(ImmutableArray<string>.Empty, null);
             MetadataReferenceResolver metadataReferenceResolver = new MetadataReferenceResolverWithEquality();
@@ -353,11 +360,14 @@ namespace Microsoft.CodeAnalysis.CSharp.UnitTests
             StrongNameProvider strongNameProvider = new DesktopStrongNameProvider();
             MetadataImportOptions metadataImportOptions = 0;
             bool reportSuppressedDiagnostics = false;
+            var topLevelBinderFlags = BinderFlags.None;
+            var publicSign = false;
+
             return new CSharpCompilationOptions(OutputKind.ConsoleApplication, reportSuppressedDiagnostics, moduleName, mainTypeName, scriptClassName, usings,
                 optimizationLevel, checkOverflow, allowUnsafe, cryptoKeyContainer, cryptoKeyFile, cryptoPublicKey, delaySign,
                 platform, generalDiagnosticOption, warningLevel, specificDiagnosticOptions,
-                concurrentBuild, extendedCustomDebugInformation, xmlReferenceResolver, sourceReferenceResolver, metadataReferenceResolver,
-                assemblyIdentityComparer, strongNameProvider, metadataImportOptions);
+                concurrentBuild, deterministic, extendedCustomDebugInformation, debugPlusMode, xmlReferenceResolver, sourceReferenceResolver, metadataReferenceResolver,
+                assemblyIdentityComparer, strongNameProvider, metadataImportOptions, publicSign, topLevelBinderFlags);
         }
 
         private sealed class MetadataReferenceResolverWithEquality : MetadataReferenceResolver

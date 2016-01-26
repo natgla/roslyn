@@ -233,6 +233,15 @@ namespace Microsoft.CodeAnalysis.CSharp {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Delegate invocation can be simplified..
+        /// </summary>
+        internal static string DelegateInvocationCanBeSimplified {
+            get {
+                return ResourceManager.GetString("DelegateInvocationCanBeSimplified", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to deprecated.
         /// </summary>
         internal static string Deprecated {
@@ -373,6 +382,15 @@ namespace Microsoft.CodeAnalysis.CSharp {
         internal static string GroupByClause {
             get {
                 return ResourceManager.GetString("GroupByClause", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Hide base member.
+        /// </summary>
+        internal static string HideBase {
+            get {
+                return ResourceManager.GetString("HideBase", resourceCulture);
             }
         }
         
@@ -566,15 +584,6 @@ namespace Microsoft.CodeAnalysis.CSharp {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Non-invoked method cannot be replaced with property..
-        /// </summary>
-        internal static string NonInvokedMethodCannotBeReplacedWithProperty {
-            get {
-                return ResourceManager.GetString("NonInvokedMethodCannotBeReplacedWithProperty", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Not all code paths return.
         /// </summary>
         internal static string NotAllCodePathReturns {
@@ -598,15 +607,6 @@ namespace Microsoft.CodeAnalysis.CSharp {
         internal static string NoValidStatementRangeToExtractOut {
             get {
                 return ResourceManager.GetString("NoValidStatementRangeToExtractOut", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Only methods with a single argument can be replaced with a property..
-        /// </summary>
-        internal static string OnlyMethodsWithASingleArgumentCanBeReplacedWithAProperty {
-            get {
-                return ResourceManager.GetString("OnlyMethodsWithASingleArgumentCanBeReplacedWithAProperty", resourceCulture);
             }
         }
         

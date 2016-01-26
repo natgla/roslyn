@@ -249,8 +249,9 @@ namespace D
                     compilation.Emit(exebits, pdbbits);
 
                     exebits.Position = 0;
-                    using (var module = new PEModule(new PEReader(exebits, PEStreamOptions.LeaveOpen), metadataOpt: IntPtr.Zero, metadataSizeOpt: 0))
+                    using (var metadata = ModuleMetadata.CreateFromStream(exebits, leaveOpen: true))
                     {
+                        var module = metadata.Module;
                         var metadataReader = module.MetadataReader;
                         MethodDefinitionHandle methodHandle = metadataReader.MethodDefinitions.Single(mh => metadataReader.GetString(metadataReader.GetMethodDefinition(mh).Name) == methodName);
                         int methodToken = metadataReader.GetToken(methodHandle);
@@ -259,10 +260,8 @@ namespace D
                         // SymReader implements ISymUnmanagedReader3 and the COM object
                         // might not.
                         pdbbits.Position = 0;
-                        using (var reader = new SymReader(pdbbits.ToArray()))
-                        {
-                            return reader.GetCSharpGroupedImportStrings(methodToken, methodVersion: 1, externAliasStrings: out externAliasStrings);
-                        }
+                        var reader = SymReaderFactory.CreateReader(pdbbits);
+                        return reader.GetCSharpGroupedImportStrings(methodToken, methodVersion: 1, externAliasStrings: out externAliasStrings);
                     }
                 }
             }
@@ -1090,8 +1089,8 @@ public class C2 : C1
             var ref2 = AssemblyMetadata.CreateFromImage(dllBytes2).GetReference(display: "B");
 
             var modulesBuilder = ArrayBuilder<ModuleInstance>.GetInstance();
-            modulesBuilder.Add(ref1.ToModuleInstance(dllBytes1, new SymReader(pdbBytes1, dllBytes1)));
-            modulesBuilder.Add(ref2.ToModuleInstance(dllBytes2, new SymReader(pdbBytes2, dllBytes2)));
+            modulesBuilder.Add(ref1.ToModuleInstance(dllBytes1, SymReaderFactory.CreateReader(pdbBytes1)));
+            modulesBuilder.Add(ref2.ToModuleInstance(dllBytes2, SymReaderFactory.CreateReader(pdbBytes2)));
             modulesBuilder.Add(MscorlibRef_v4_0_30316_17626.ToModuleInstance(fullImage: null, symReader: null));
             modulesBuilder.Add(ExpressionCompilerTestHelpers.IntrinsicAssemblyReference.ToModuleInstance(fullImage: null, symReader: null));
 

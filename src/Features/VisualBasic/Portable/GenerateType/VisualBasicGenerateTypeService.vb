@@ -416,7 +416,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.GenerateType
             Return compilation.ClassifyConversion(sourceType, targetType).IsWidening
         End Function
 
-        Public Overrides Async Function GetOrGenerateEnclosingNamespaceSymbol(namedTypeSymbol As INamedTypeSymbol, containers() As String, selectedDocument As Document, selectedDocumentRoot As SyntaxNode, cancellationToken As CancellationToken) As Task(Of Tuple(Of INamespaceSymbol, INamespaceOrTypeSymbol, Location))
+        Public Overrides Async Function GetOrGenerateEnclosingNamespaceSymbolAsync(namedTypeSymbol As INamedTypeSymbol, containers() As String, selectedDocument As Document, selectedDocumentRoot As SyntaxNode, cancellationToken As CancellationToken) As Task(Of Tuple(Of INamespaceSymbol, INamespaceOrTypeSymbol, Location))
             Dim compilationUnit = DirectCast(selectedDocumentRoot, CompilationUnitSyntax)
             Dim semanticModel = Await selectedDocument.GetSemanticModelAsync(cancellationToken).ConfigureAwait(False)
 
@@ -569,7 +569,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.GenerateType
 
             Dim node As SyntaxNode = expression
             While node IsNot Nothing
-                ' Types in BaseList, Type Constraint or Member Types cannot be of restricter accessibility than the declaring type
+                ' Types in BaseList, Type Constraint or Member Types cannot be of more restricted accessibility than the declaring type
                 If TypeOf node Is InheritsOrImplementsStatementSyntax AndAlso
                     node.Parent IsNot Nothing AndAlso
                     TypeOf node.Parent Is TypeBlockSyntax Then
@@ -622,7 +622,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.GenerateType
             Return TypeOf expression Is SimpleNameSyntax
         End Function
 
-        Friend Overrides Function TryAddUsingsOrImportToDocument(updatedSolution As Solution, modifiedRoot As SyntaxNode, document As Document, simpleName As SimpleNameSyntax, includeUsingsOrImports As String, cancellationToken As CancellationToken) As Solution
+        Friend Overrides Async Function TryAddUsingsOrImportToDocumentAsync(updatedSolution As Solution, modifiedRoot As SyntaxNode, document As Document, simpleName As SimpleNameSyntax, includeUsingsOrImports As String, cancellationToken As CancellationToken) As Task(Of Solution)
             ' Nothing to include
             If String.IsNullOrWhiteSpace(includeUsingsOrImports) Then
                 Return updatedSolution
@@ -631,7 +631,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.GenerateType
             Dim placeSystemNamespaceFirst = document.Project.Solution.Workspace.Options.GetOption(OrganizerOptions.PlaceSystemNamespaceFirst, document.Project.Language)
             Dim root As SyntaxNode = Nothing
             If (modifiedRoot Is Nothing) Then
-                root = document.GetSyntaxRootAsync(cancellationToken).WaitAndGetResult(cancellationToken)
+                root = Await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(False)
             Else
                 root = modifiedRoot
             End If
@@ -663,7 +663,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.GenerateType
                 Next
 
                 ' Check if the GFU is triggered from the namespace same as the imports namespace
-                If IsWithinTheImportingNamespace(document, simpleName.SpanStart, includeUsingsOrImports, cancellationToken) Then
+                If Await IsWithinTheImportingNamespaceAsync(document, simpleName.SpanStart, includeUsingsOrImports, cancellationToken).ConfigureAwait(False) Then
                     Return updatedSolution
                 End If
 
@@ -716,7 +716,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.GenerateType
             Return True
         End Function
 
-        Friend Overrides Function GetDelegatingConstructor(objectCreation As ObjectCreationExpressionSyntax, namedType As INamedTypeSymbol, model As SemanticModel, candidates As ISet(Of IMethodSymbol), cancellationToken As CancellationToken) As IMethodSymbol
+        Friend Overrides Function GetDelegatingConstructor(document As SemanticDocument,
+                                                           objectCreation As ObjectCreationExpressionSyntax,
+                                                           namedType As INamedTypeSymbol,
+                                                           candidates As ISet(Of IMethodSymbol),
+                                                           cancellationToken As CancellationToken) As IMethodSymbol
+            Dim model = document.SemanticModel
             Dim oldNode = objectCreation _
                 .AncestorsAndSelf(ascendOutOfTrivia:=False) _
                 .Where(Function(node) SpeculationAnalyzer.CanSpeculateOnNode(node)) _
@@ -731,10 +736,21 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.GenerateType
             If speculativeModel IsNot Nothing Then
                 newObjectCreation = DirectCast(newNode.GetAnnotatedNodes(s_annotation).Single(), ObjectCreationExpressionSyntax)
                 Dim symbolInfo = speculativeModel.GetSymbolInfo(newObjectCreation, cancellationToken)
-                Return GenerateConstructorHelpers.GetDelegatingConstructor(symbolInfo, candidates, namedType)
+                Dim parameterTypes As IList(Of ITypeSymbol) = GetSpeculativeArgumentTypes(speculativeModel, newObjectCreation)
+                Return GenerateConstructorHelpers.GetDelegatingConstructor(
+                    document, symbolInfo, candidates, namedType, parameterTypes)
             End If
 
             Return Nothing
+        End Function
+
+        Private Shared Function GetSpeculativeArgumentTypes(model As SemanticModel, newObjectCreation As ObjectCreationExpressionSyntax) As IList(Of ITypeSymbol)
+            Return If(newObjectCreation.ArgumentList Is Nothing,
+                      SpecializedCollections.EmptyList(Of ITypeSymbol),
+                      newObjectCreation.ArgumentList.Arguments.Select(
+                          Function(a)
+                              Return If(a.GetExpression() Is Nothing, Nothing, model.GetTypeInfo(a.GetExpression()).ConvertedType)
+                          End Function).ToList())
         End Function
     End Class
 End Namespace

@@ -7,8 +7,8 @@ Imports Roslyn.Test.Utilities
 Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Progression
     Public Class IsCalledByGraphQueryTests
         <Fact, Trait(Traits.Feature, Traits.Features.Progression)>
-        Public Sub IsCalledBySimpleTests()
-            Using testState = New ProgressionTestState(
+        Public Async Function IsCalledBySimpleTests() As Threading.Tasks.Task
+            Using testState = Await ProgressionTestState.CreateAsync(
                     <Workspace>
                         <Project Language="C#" CommonReferences="true" FilePath="Z:\Project.csproj">
                             <Document FilePath="Z:\Project.cs">
@@ -37,8 +37,8 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Progression
                         </Project>
                     </Workspace>)
 
-                Dim inputGraph = testState.GetGraphWithMarkedSymbolNode()
-                Dim outputContext = testState.GetGraphContextAfterQuery(inputGraph, New IsCalledByGraphQuery(), GraphContextDirection.Target)
+                Dim inputGraph = await testState.GetGraphWithMarkedSymbolNodeAsync()
+                Dim outputContext = Await testState.GetGraphContextAfterQuery(inputGraph, New IsCalledByGraphQuery(), GraphContextDirection.Target)
 
                 AssertSimplifiedGraphIs(
                     outputContext.Graph,
@@ -55,6 +55,6 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Progression
                         </IdentifierAliases>
                     </DirectedGraph>)
             End Using
-        End Sub
+        End Function
     End Class
 End Namespace

@@ -70,7 +70,7 @@ namespace Microsoft.CodeAnalysis.ExpressionEvaluator
                 target,
                 expr,
                 ImmutableArray<Alias>.Empty,
-                formatter ?? DiagnosticFormatter.Instance,
+                formatter ?? DebuggerDiagnosticFormatter.Instance,
                 out resultProperties,
                 out error,
                 out missingAssemblyIdentities,
@@ -165,7 +165,7 @@ namespace Microsoft.CodeAnalysis.ExpressionEvaluator
                 expr,
                 DkmEvaluationFlags.TreatAsExpression,
                 ImmutableArray<Alias>.Empty,
-                formatter ?? DiagnosticFormatter.Instance,
+                formatter ?? DebuggerDiagnosticFormatter.Instance,
                 out resultProperties,
                 out error,
                 out missingAssemblyIdentities,
@@ -190,7 +190,7 @@ namespace Microsoft.CodeAnalysis.ExpressionEvaluator
                 expr,
                 compilationFlags,
                 aliases,
-                formatter ?? DiagnosticFormatter.Instance,
+                formatter ?? DebuggerDiagnosticFormatter.Instance,
                 out resultProperties,
                 out error,
                 out missingAssemblyIdentities,
@@ -243,7 +243,7 @@ namespace Microsoft.CodeAnalysis.ExpressionEvaluator
         {
             return ExpressionCompiler.CompileWithRetry(
                 metadataBlocks,
-                DiagnosticFormatter.Instance,
+                DebuggerDiagnosticFormatter.Instance,
                 (blocks, useReferencedModulesOnly) => context,
                 compile,
                 getMetaDataBytesPtr,
@@ -253,6 +253,7 @@ namespace Microsoft.CodeAnalysis.ExpressionEvaluator
         internal static CompileResult CompileExpressionWithRetry(
             ImmutableArray<MetadataBlock> metadataBlocks,
             string expr,
+            ImmutableArray<Alias> aliases,
             ExpressionCompiler.CreateContextDelegate createContext,
             DkmUtilities.GetMetadataBytesPtrFunction getMetaDataBytesPtr,
             out string errorMessage,
@@ -260,7 +261,7 @@ namespace Microsoft.CodeAnalysis.ExpressionEvaluator
         {
             var r = ExpressionCompiler.CompileWithRetry(
                 metadataBlocks,
-                DiagnosticFormatter.Instance,
+                DebuggerDiagnosticFormatter.Instance,
                 createContext,
                 (context, diagnostics) =>
                 {
@@ -269,7 +270,7 @@ namespace Microsoft.CodeAnalysis.ExpressionEvaluator
                     var compileResult = context.CompileExpression(
                         expr,
                         DkmEvaluationFlags.TreatAsExpression,
-                        ImmutableArray<Alias>.Empty,
+                        aliases,
                         diagnostics,
                         out resultProperties,
                         td);
@@ -375,8 +376,9 @@ namespace Microsoft.CodeAnalysis.ExpressionEvaluator
                 throw new NotImplementedException();
             }
 
-            using (var module = new PEModule(new PEReader(assembly), metadataOpt: IntPtr.Zero, metadataSizeOpt: 0))
+            using (var metadata = ModuleMetadata.CreateFromImage(assembly))
             {
+                var module = metadata.Module;
                 var reader = module.MetadataReader;
                 var typeDef = reader.GetTypeDef(parts[0]);
                 var methodName = parts[1];

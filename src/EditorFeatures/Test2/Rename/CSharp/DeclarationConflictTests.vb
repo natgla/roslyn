@@ -5,7 +5,7 @@ Imports Microsoft.CodeAnalysis.Rename.ConflictEngine
 Namespace Microsoft.CodeAnalysis.Editor.UnitTests.Rename.CSharp
     Public Class DeclarationConflictTests
 
-        <Fact(Skip:="917043")>
+        <WpfFact(Skip:="917043")>
         <WorkItem(917043)>
         <Trait(Traits.Feature, Traits.Features.Rename)>
         Public Sub NoConflictForDelegate()
@@ -27,7 +27,7 @@ class C
             End Using
         End Sub
 
-        <Fact(Skip:="917043")>
+        <WpfFact(Skip:="917043")>
         <WorkItem(917043)>
         <Trait(Traits.Feature, Traits.Features.Rename)>
         Public Sub NoConflictForIsolatedScopes()
@@ -544,6 +544,56 @@ class C
 
                 result.AssertLabeledSpansAre("first", "Method", RelatedLocationType.NoConflict)
                 result.AssertLabeledSpansAre("second", "DefaultValue(C.Method)", type:=RelatedLocationType.ResolvedReferenceConflict)
+            End Using
+        End Sub
+
+        <WorkItem(6306, "https://github.com/dotnet/roslyn/issues/6306")>
+        <Fact, Trait(Traits.Feature, Traits.Features.Rename)>
+        Public Sub ResolveConflictInAnonymousTypeProperty()
+            Using result = RenameEngineResult.Create(
+                <Workspace>
+                    <Project Language="C#" CommonReferences="true">
+                        <Document><![CDATA[
+using System;
+class C
+{
+    void X<T>(T t, Func<T, long> e) { {|first:X|}(new { a = 1 }, a => a.a); }
+
+    [Obsolete]
+    void {|origin:$$Y|}<T>(T t, Func<T, int> e) { }
+}
+                        ]]></Document>
+                    </Project>
+                </Workspace>, renameTo:="X")
+
+                result.AssertLabeledSpansAre("first", "X(new { a = 1 }, a => (long)a.a);", type:=RelatedLocationType.ResolvedNonReferenceConflict)
+                result.AssertLabeledSpansAre("origin", "X", type:=RelatedLocationType.NoConflict)
+            End Using
+        End Sub
+
+        <WorkItem(6308, "https://github.com/dotnet/roslyn/issues/6308")>
+        <Fact, Trait(Traits.Feature, Traits.Features.Rename)>
+        Public Sub ResolveConflictWhenAnonymousTypeIsUsedAsGenericArgument()
+            Using result = RenameEngineResult.Create(
+                <Workspace>
+                    <Project Language="C#" CommonReferences="true">
+                        <Document><![CDATA[
+using System;
+class C
+{
+    void M<T>(T t, Func<T, int, int> e) { }
+    int M<T>(T t, Func<T, long, long> e) => {|first:M|}(new { }, (_, a) => {|second:X|}(a));
+
+    long X(long a) => a;
+    int {|origin:$$Y|}(int a) => a;
+}
+                        ]]></Document>
+                    </Project>
+                </Workspace>, renameTo:="X")
+
+                result.AssertLabeledSpansAre("first", "M(new { }, (_, a) => (long)X(a))", type:=RelatedLocationType.ResolvedNonReferenceConflict)
+                result.AssertLabeledSpansAre("second", "M(new { }, (_, a) => (long)X(a))", type:=RelatedLocationType.ResolvedNonReferenceConflict)
+                result.AssertLabeledSpansAre("origin", "X", type:=RelatedLocationType.NoConflict)
             End Using
         End Sub
     End Class

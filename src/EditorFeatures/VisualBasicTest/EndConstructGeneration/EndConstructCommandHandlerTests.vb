@@ -19,7 +19,7 @@ Namespace Microsoft.CodeAnalysis.Editor.VisualBasic.UnitTests.EndConstructGenera
 
 #If False Then
         ' TODO(jasonmal): Figure out how to enable these tests.
-        <Fact, Trait(Traits.Feature, Traits.Features.EndConstructGeneration)>
+        <WpfFact, Trait(Traits.Feature, Traits.Features.EndConstructGeneration)>
         Public Sub ServiceNotCompletingShouldCallNextHandler()
             _endConstructServiceMock.Setup(Function(s) s.TryDo(It.IsAny(Of ITextView), It.IsAny(Of ITextBuffer), It.IsAny(Of Char))).Returns(False)
             _featureOptions.Setup(Function(s) s.GetOption(FeatureOnOffOptions.EndConstruct)).Returns(True)
@@ -31,7 +31,7 @@ Namespace Microsoft.CodeAnalysis.Editor.VisualBasic.UnitTests.EndConstructGenera
             Assert.True(nextHandlerCalled)
         End Sub
 
-        <Fact, Trait(Traits.Feature, Traits.Features.EndConstructGeneration)>
+        <WpfFact, Trait(Traits.Feature, Traits.Features.EndConstructGeneration)>
         Public Sub ServiceCompletingShouldCallNextHandler()
             _endConstructServiceMock.Setup(Function(s) s.TryDo(It.IsAny(Of ITextView), It.IsAny(Of ITextBuffer), It.IsAny(Of Char))).Returns(True)
             _featureOptions.Setup(Function(s) s.GetOption(FeatureOnOffOptions.EndConstruct)).Returns(True)
@@ -44,9 +44,9 @@ Namespace Microsoft.CodeAnalysis.Editor.VisualBasic.UnitTests.EndConstructGenera
         End Sub
 #End If
 
-        <Fact, Trait(Traits.Feature, Traits.Features.EndConstructGeneration)>
+        <WpfFact, Trait(Traits.Feature, Traits.Features.EndConstructGeneration)>
         <WorkItem(544556)>
-        Public Sub EndConstruct_AfterCodeCleanup()
+        Public Async Function EndConstruct_AfterCodeCleanup() As Threading.Tasks.Task
             Dim code = <code>Class C
     Sub Main(args As String())
         Dim z = 1
@@ -65,12 +65,12 @@ End Class</code>.Value.Replace(vbLf, vbCrLf)
     End Sub
 End Class</code>.Value.Replace(vbLf, vbCrLf)
 
-            VerifyAppliedAfterReturnUsingCommandHandler(code, {4, -1}, expected, {5, 12})
-        End Sub
+            Await VerifyAppliedAfterReturnUsingCommandHandlerAsync(code, {4, -1}, expected, {5, 12})
+        End Function
 
-        <Fact, Trait(Traits.Feature, Traits.Features.EndConstructGeneration)>
+        <WpfFact, Trait(Traits.Feature, Traits.Features.EndConstructGeneration)>
         <WorkItem(546798)>
-        Public Sub EndConstruct_AfterCodeCleanup_FormatOnlyTouched()
+        Public Async Function EndConstruct_AfterCodeCleanup_FormatOnlyTouched() As Threading.Tasks.Task
             Dim code = <code>Class C1
     Sub M1()
         System.Diagnostics. _Debug.Assert(True)
@@ -84,12 +84,12 @@ End Class</code>.Value.Replace(vbLf, vbCrLf)
     End Sub
 End Class</code>.Value.Replace(vbLf, vbCrLf)
 
-            VerifyAppliedAfterReturnUsingCommandHandler(code, {2, 29}, expected, {3, 12})
-        End Sub
+            Await VerifyAppliedAfterReturnUsingCommandHandlerAsync(code, {2, 29}, expected, {3, 12})
+        End Function
 
-        <Fact, Trait(Traits.Feature, Traits.Features.EndConstructGeneration)>
+        <WpfFact, Trait(Traits.Feature, Traits.Features.EndConstructGeneration)>
         <WorkItem(531347)>
-        Public Sub EndConstruct_AfterCodeCleanup_FormatOnly_WhenContainsDiagnostics()
+        Public Async Function EndConstruct_AfterCodeCleanup_FormatOnly_WhenContainsDiagnostics() As Threading.Tasks.Task
             Dim code = <code>Module Program
     Sub Main(args As String())
         Dim a
@@ -109,17 +109,17 @@ End Module</code>.Value.Replace(vbLf, vbCrLf)
     End Sub
 End Module</code>.Value.Replace(vbLf, vbCrLf)
 
-            VerifyAppliedAfterReturnUsingCommandHandler(code, {4, -1}, expected, {5, 8})
-        End Sub
+            Await VerifyAppliedAfterReturnUsingCommandHandlerAsync(code, {4, -1}, expected, {5, 8})
+        End Function
 
         <WorkItem(628656)>
-        <Fact, Trait(Traits.Feature, Traits.Features.EndConstructGeneration)>
-        Public Sub EndConstruct_NotOnLineFollowingToken()
-            VerifyStatementEndConstructNotApplied(
-                text:={"Class C",
-                        "",
-                       ""},
+        <WpfFact, Trait(Traits.Feature, Traits.Features.EndConstructGeneration)>
+        Public Async Function EndConstruct_NotOnLineFollowingToken() As Threading.Tasks.Task
+            Await VerifyStatementEndConstructNotAppliedAsync(
+                text:="Class C
+
+",
                 caret:={2, 0})
-        End Sub
+        End Function
     End Class
 End Namespace

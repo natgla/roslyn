@@ -46,7 +46,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics
                 }
                 else
                 {
-                    suppressions = new Dictionary<string, SuppressMessageInfo>() {{ info.Id, info }};
+                    suppressions = new Dictionary<string, SuppressMessageInfo>() { { info.Id, info } };
                     _globalSymbolSuppressions.Add(symbol, suppressions);
                 }
             }
@@ -77,7 +77,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics
             _localSuppressionsBySymbol = new ConcurrentDictionary<ISymbol, ImmutableDictionary<string, SuppressMessageInfo>>();
         }
 
-        public static Diagnostic ApplySourceSuppressions(Diagnostic diagnostic, Compilation compilation, ISymbol symbolOpt = null)
+        public Diagnostic ApplySourceSuppressions(Diagnostic diagnostic, ISymbol symbolOpt = null)
         {
             if (diagnostic.IsSuppressed)
             {
@@ -85,16 +85,27 @@ namespace Microsoft.CodeAnalysis.Diagnostics
                 return diagnostic;
             }
 
-            var suppressMessageState = AnalyzerDriver.GetOrCreateCachedCompilationData(compilation).SuppressMessageAttributeState;
-
             SuppressMessageInfo info;
-            if (suppressMessageState.IsDiagnosticSuppressed(diagnostic, out info))
+            if (IsDiagnosticSuppressed(diagnostic, out info))
             {
                 // Attach the suppression info to the diagnostic.
                 diagnostic = diagnostic.WithIsSuppressed(true);
             }
 
             return diagnostic;
+        }
+
+        public bool IsDiagnosticSuppressed(Diagnostic diagnostic, out AttributeData suppressingAttribute)
+        {
+            SuppressMessageInfo info;
+            if (IsDiagnosticSuppressed(diagnostic, out info))
+            {
+                suppressingAttribute = info.Attribute;
+                return true;
+            }
+
+            suppressingAttribute = null;
+            return false;
         }
 
         private bool IsDiagnosticSuppressed(Diagnostic diagnostic, out SuppressMessageInfo info, ISymbol symbolOpt = null)
@@ -359,6 +370,7 @@ namespace Microsoft.CodeAnalysis.Diagnostics
             info.Scope = attribute.DecodeNamedArgument<string>("Scope", SpecialType.System_String);
             info.Target = attribute.DecodeNamedArgument<string>("Target", SpecialType.System_String);
             info.MessageId = attribute.DecodeNamedArgument<string>("MessageId", SpecialType.System_String);
+            info.Attribute = attribute;
 
             return true;
         }

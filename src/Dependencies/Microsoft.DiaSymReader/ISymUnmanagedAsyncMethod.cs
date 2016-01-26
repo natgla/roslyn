@@ -12,13 +12,13 @@ namespace Microsoft.DiaSymReader
     public interface ISymUnmanagedAsyncMethod
     {
         [PreserveSig]
-        int IsAsyncMethod(out bool value);
+        int IsAsyncMethod([MarshalAs(UnmanagedType.Bool)]out bool value);
 
         [PreserveSig]
         int GetKickoffMethod(out int kickoffMethodToken);
 
         [PreserveSig]
-        int HasCatchHandlerILOffset(out bool offset);
+        int HasCatchHandlerILOffset([MarshalAs(UnmanagedType.Bool)]out bool offset);
 
         [PreserveSig]
         int GetCatchHandlerILOffset(out int offset);
@@ -30,8 +30,8 @@ namespace Microsoft.DiaSymReader
         int GetAsyncStepInfo(
             int bufferLength,
             out int count,
-            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] int[] yieldOffsets,
-            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] int[] breakpointOffset,
-            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] int[] breakpointMethod);
+            [In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] int[] yieldOffsets,
+            [In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] int[] breakpointOffset,
+            [In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 0)] int[] breakpointMethod);
     }
 }

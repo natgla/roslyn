@@ -2,9 +2,8 @@
 
 using System.Collections.Generic;
 using System.Composition;
-using System.Linq;
 using System.Threading;
-using Microsoft.CodeAnalysis;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Extensions;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -12,7 +11,6 @@ using Microsoft.CodeAnalysis.Editor.Implementation.Formatting.Indentation;
 using Microsoft.CodeAnalysis.Editor.Implementation.SmartIndent;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Formatting.Rules;
-using Microsoft.CodeAnalysis.Host;
 using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.CodeAnalysis.Options;
 using Microsoft.CodeAnalysis.Shared.Extensions;
@@ -32,9 +30,10 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.Formatting.Indentation
             return s_instance;
         }
 
-        protected override AbstractIndenter GetIndenter(Document document, ITextSnapshotLine lineToBeIndented, IEnumerable<IFormattingRule> formattingRules, OptionSet optionSet, CancellationToken cancellationToken)
+        protected override async Task<AbstractIndenter> GetIndenterAsync(Document document, ITextSnapshotLine lineToBeIndented, IEnumerable<IFormattingRule> formattingRules, OptionSet optionSet, CancellationToken cancellationToken)
         {
-            return new Indenter(document, formattingRules, optionSet, lineToBeIndented, cancellationToken);
+            var syntacticDocument = await SyntacticDocument.CreateAsync(document, cancellationToken).ConfigureAwait(false);
+            return new Indenter(syntacticDocument, formattingRules, optionSet, lineToBeIndented, cancellationToken);
         }
 
         protected override bool ShouldUseSmartTokenFormatterInsteadOfIndenter(
@@ -123,8 +122,11 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.Formatting.Indentation
                     return;
                 }
 
+                // only valid if the user has started to actually type a constructor initializer
                 var constructorInitializer = node as ConstructorInitializerSyntax;
-                if (constructorInitializer != null && constructorInitializer.ArgumentList.OpenParenToken.Kind() != SyntaxKind.None)
+                if (constructorInitializer != null &&
+                    constructorInitializer.ArgumentList.OpenParenToken.Kind() != SyntaxKind.None &&
+                    !constructorInitializer.ThisOrBaseKeyword.IsMissing)
                 {
                     var text = node.SyntaxTree.GetText();
 

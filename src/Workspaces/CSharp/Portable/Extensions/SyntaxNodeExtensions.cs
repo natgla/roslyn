@@ -176,7 +176,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Extensions
             var endOfLine = Match(SyntaxKind.EndOfLineTrivia, "\\n");
             var singleBlankLine = Matcher.Sequence(whitespace, endOfLine);
 
-            var shebangComment = Match(SyntaxKind.ShebangTrivia, "#!");
+            var shebangComment = Match(SyntaxKind.ShebangDirectiveTrivia, "#!");
             var singleLineComment = Match(SyntaxKind.SingleLineCommentTrivia, "//");
             var multiLineComment = Match(SyntaxKind.MultiLineCommentTrivia, "/**/");
             var anyCommentMatcher = Matcher.Choice(shebangComment, singleLineComment, multiLineComment);
@@ -658,7 +658,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Extensions
 
             if (ppIndex != -1)
             {
-                // We have a pp directive.  it (and all all previous trivia) must be stripped.
+                // We have a pp directive.  it (and all previous trivia) must be stripped.
                 leadingTriviaToStrip = new List<SyntaxTrivia>(leadingTrivia.Take(ppIndex + 1));
                 leadingTriviaToKeep = new List<SyntaxTrivia>(leadingTrivia.Skip(ppIndex + 1));
             }
@@ -752,78 +752,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Extensions
 
                 current = current.Parent;
             }
-        }
-
-        /// <summary>
-        /// Look inside a trivia list for a skipped token that contains the given position.
-        /// </summary>
-        private static readonly Func<SyntaxTriviaList, int, SyntaxToken> s_findSkippedTokenForward =
-            (l, p) => FindTokenHelper.FindSkippedTokenForward(GetSkippedTokens(l), p);
-
-        /// <summary>
-        /// Look inside a trivia list for a skipped token that contains the given position.
-        /// </summary>
-        private static readonly Func<SyntaxTriviaList, int, SyntaxToken> s_findSkippedTokenBackward =
-            (l, p) => FindTokenHelper.FindSkippedTokenBackward(GetSkippedTokens(l), p);
-
-        /// <summary>
-        /// return only skipped tokens
-        /// </summary>
-        private static IEnumerable<SyntaxToken> GetSkippedTokens(SyntaxTriviaList list)
-        {
-            // PERF: Avoid allocations in the most common case of no skipped tokens.
-            if (!HasSkippedTokens(list))
-            {
-                return SpecializedCollections.EmptyEnumerable<SyntaxToken>();
-            }
-
-            return list.Where(trivia => trivia.RawKind == (int)SyntaxKind.SkippedTokensTrivia)
-                       .SelectMany(t => ((SkippedTokensTriviaSyntax)t.GetStructure()).Tokens);
-        }
-
-        private static bool HasSkippedTokens(SyntaxTriviaList list)
-        {
-            foreach (var trivia in list)
-            {
-                if (trivia.RawKind == (int)SyntaxKind.SkippedTokensTrivia)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// If the position is inside of token, return that token; otherwise, return the token to the right.
-        /// </summary>
-        public static SyntaxToken FindTokenOnRightOfPosition(
-            this SyntaxNode root,
-            int position,
-            bool includeSkipped = true,
-            bool includeDirectives = false,
-            bool includeDocumentationComments = false)
-        {
-            var skippedTokenFinder = includeSkipped ? s_findSkippedTokenForward : null;
-
-            return FindTokenHelper.FindTokenOnRightOfPosition<CompilationUnitSyntax>(
-                root, position, skippedTokenFinder, includeSkipped, includeDirectives, includeDocumentationComments);
-        }
-
-        /// <summary>
-        /// If the position is inside of token, return that token; otherwise, return the token to the left.
-        /// </summary>
-        public static SyntaxToken FindTokenOnLeftOfPosition(
-            this SyntaxNode root,
-            int position,
-            bool includeSkipped = true,
-            bool includeDirectives = false,
-            bool includeDocumentationComments = false)
-        {
-            var skippedTokenFinder = includeSkipped ? s_findSkippedTokenBackward : null;
-
-            return FindTokenHelper.FindTokenOnLeftOfPosition<CompilationUnitSyntax>(
-                root, position, skippedTokenFinder, includeSkipped, includeDirectives, includeDocumentationComments);
         }
 
         /// <summary>
@@ -960,25 +888,32 @@ namespace Microsoft.CodeAnalysis.CSharp.Extensions
 
         public static bool IsEmbeddedStatementOwner(this SyntaxNode node)
         {
-            return node is IfStatementSyntax ||
+            return
+                   node is DoStatementSyntax ||
                    node is ElseClauseSyntax ||
-                   node is WhileStatementSyntax ||
-                   node is ForStatementSyntax ||
+                   node is FixedStatementSyntax ||
                    node is ForEachStatementSyntax ||
+                   node is ForStatementSyntax ||
+                   node is IfStatementSyntax ||
+                   node is LabeledStatementSyntax ||
+                   node is LockStatementSyntax ||
                    node is UsingStatementSyntax ||
-                   node is DoStatementSyntax;
+                   node is WhileStatementSyntax;
         }
 
         public static StatementSyntax GetEmbeddedStatement(this SyntaxNode node)
         {
             return node.TypeSwitch(
-                (IfStatementSyntax n) => n.Statement,
-                (ElseClauseSyntax n) => n.Statement,
-                (WhileStatementSyntax n) => n.Statement,
-                (ForStatementSyntax n) => n.Statement,
-                (ForEachStatementSyntax n) => n.Statement,
-                (UsingStatementSyntax n) => n.Statement,
                 (DoStatementSyntax n) => n.Statement,
+                (ElseClauseSyntax n) => n.Statement,
+                (FixedStatementSyntax n) => n.Statement,
+                (ForEachStatementSyntax n) => n.Statement,
+                (ForStatementSyntax n) => n.Statement,
+                (IfStatementSyntax n) => n.Statement,
+                (LabeledStatementSyntax n) => n.Statement,
+                (LockStatementSyntax n) => n.Statement,
+                (UsingStatementSyntax n) => n.Statement,
+                (WhileStatementSyntax n) => n.Statement,
                 (SyntaxNode n) => null);
         }
 

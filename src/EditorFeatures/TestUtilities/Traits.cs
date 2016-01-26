@@ -16,6 +16,7 @@ namespace Roslyn.Test.Utilities
         public static class Features
         {
             public const string Adornments = "Adornments";
+            public const string AsyncLazy = nameof(AsyncLazy);
             public const string AutomaticEndConstructCorrection = "AutomaticEndConstructCorrection";
             public const string AutomaticCompletion = "AutomaticCompletion";
             public const string BraceHighlighting = "BraceHighlighting";
@@ -24,6 +25,7 @@ namespace Roslyn.Test.Utilities
             public const string CaseCorrection = "CaseCorrection";
             public const string ChangeSignature = "ChangeSignature";
             public const string Classification = "Classification";
+            public const string ClassView = "ClassView";
             public const string CodeActionsAddConstructorParameters = "CodeActions.AddConstructorParameters";
             public const string CodeActionsAddAsync = "CodeActions.AddAsync";
             public const string CodeActionsAddAwait = "CodeActions.AddAwait";
@@ -57,7 +59,9 @@ namespace Roslyn.Test.Utilities
             public const string CodeActionsInsertMissingTokens = "CodeActions.InsertMissingTokens";
             public const string CodeActionsIntroduceVariable = "CodeActions.IntroduceVariable";
             public const string CodeActionsInvertIf = "CodeActions.InvertIf";
+            public const string CodeActionsInvokeDelegateWithConditionalAccess = "CodeActions.InvokeDelegateWithConditionalAccess";
             public const string CodeActionsLambdaSimplifier = "CodeActions.LambdaSimplifier";
+            public const string CodeActionsMakeMethodSynchronous = "CodeActions.MakeMethodSynchronous";
             public const string CodeActionsMoveDeclarationNearReference = "CodeActions.MoveDeclarationNearReference";
             public const string CodeActionsMoveToTopOfFile = "CodeActions.MoveToTopOfFile";
             public const string CodeActionsReplaceMethodWithProperty = "CodeActions.ReplaceMethodWithProperty";
@@ -95,6 +99,8 @@ namespace Roslyn.Test.Utilities
             public const string F1Help = "F1Help";
             public const string Formatting = "Formatting";
             public const string GoToDefinition = "GoToDefinition";
+            public const string GoToImplementation = "GoToImplementation";
+            public const string GoToAdjacentMember = "GoToAdjacentMember";
             public const string Interactive = "Interactive";
             public const string InteractiveHost = "InteractiveHost";
             public const string KeywordHighlighting = "KeywordHighlighting";
@@ -126,7 +132,10 @@ namespace Roslyn.Test.Utilities
             public const string TypeInferenceService = "TypeInferenceService";
             public const string Venus = "Venus";
             public const string VsLanguageBlock = "VsLanguageBlock";
+            public const string VsNavInfo = "VsNavInfo";
             public const string XmlTagCompletion = "XmlTagCompletion";
+            public const string CodeActionsAddOverload = "CodeActions.AddOverloads";
+            public const string CodeActionsAddNew = "CodeActions.AddNew";
         }
     }
 }

@@ -1,5 +1,6 @@
 // Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
+using System;
 using System.Collections.Generic;
 using System.Composition;
 using System.Linq;
@@ -9,6 +10,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.CSharp.Utilities;
 using Microsoft.CodeAnalysis.GenerateMember.GenerateConstructor;
 using Microsoft.CodeAnalysis.Host.Mef;
+using Microsoft.CodeAnalysis.LanguageServices;
 using Microsoft.CodeAnalysis.Shared.Extensions;
 
 namespace Microsoft.CodeAnalysis.CSharp.GenerateMember.GenerateConstructor
@@ -26,6 +28,11 @@ namespace Microsoft.CodeAnalysis.CSharp.GenerateMember.GenerateConstructor
         protected override bool IsConstructorInitializerGeneration(SemanticDocument document, SyntaxNode node, CancellationToken cancellationToken)
         {
             return node is ConstructorInitializerSyntax;
+        }
+
+        protected override bool IsClassDeclarationGeneration(SemanticDocument document, SyntaxNode node, CancellationToken cancellationToken)
+        {
+            return node is ClassDeclarationSyntax;
         }
 
         protected override bool TryInitializeConstructorInitializerGeneration(
@@ -51,6 +58,35 @@ namespace Microsoft.CodeAnalysis.CSharp.GenerateMember.GenerateConstructor
             arguments = null;
             typeToGenerateIn = null;
             return false;
+        }
+
+        protected override bool TryInitializeClassDeclarationGenerationState(
+            SemanticDocument document,
+            SyntaxNode node,
+            CancellationToken cancellationToken,
+            out SyntaxToken token,
+            out IMethodSymbol delegatedConstructor,
+            out INamedTypeSymbol typeToGenerateIn)
+        {
+            token = default(SyntaxToken);
+            typeToGenerateIn = null;
+            delegatedConstructor = null;
+
+            var semanticModel = document.SemanticModel;
+            var classDeclaration = (ClassDeclarationSyntax)node;
+            var classSymbol = semanticModel.GetDeclaredSymbol(classDeclaration, cancellationToken);
+
+            var baseType = classSymbol.BaseType;
+            var constructor = baseType.Constructors.FirstOrDefault(c => IsSymbolAccessible(c, document));
+            if (constructor == null)
+            {
+                return false;
+            }
+
+            typeToGenerateIn = classSymbol;
+            delegatedConstructor = constructor;
+            token = classDeclaration.Identifier;
+            return true;
         }
 
         protected override bool TryInitializeSimpleNameGenerationState(
@@ -178,7 +214,13 @@ namespace Microsoft.CodeAnalysis.CSharp.GenerateMember.GenerateConstructor
             return compilation.ClassifyConversion(sourceType, targetType).IsImplicit;
         }
 
-        internal override IMethodSymbol GetDelegatingConstructor(State state, SemanticDocument document, int argumentCount, INamedTypeSymbol namedType, ISet<IMethodSymbol> candidates, CancellationToken cancellationToken)
+        internal override IMethodSymbol GetDelegatingConstructor(
+            State state,
+            SemanticDocument document,
+            int argumentCount,
+            INamedTypeSymbol namedType,
+            ISet<IMethodSymbol> candidates,
+            CancellationToken cancellationToken)
         {
             var oldToken = state.Token;
             var tokenKind = oldToken.Kind();
@@ -207,7 +249,8 @@ namespace Microsoft.CodeAnalysis.CSharp.GenerateMember.GenerateConstructor
                 if (document.SemanticModel.TryGetSpeculativeSemanticModel(ctorInitializer.Span.Start, newCtorInitializer, out speculativeModel))
                 {
                     var symbolInfo = speculativeModel.GetSymbolInfo(newCtorInitializer, cancellationToken);
-                    return GenerateConstructorHelpers.GetDelegatingConstructor(symbolInfo, candidates, namedType);
+                    return GenerateConstructorHelpers.GetDelegatingConstructor(
+                        document, symbolInfo, candidates, namedType, state.ParameterTypes);
                 }
             }
             else
@@ -257,7 +300,8 @@ namespace Microsoft.CodeAnalysis.CSharp.GenerateMember.GenerateConstructor
                 if (speculativeModel != null)
                 {
                     var symbolInfo = speculativeModel.GetSymbolInfo(newTypeName.Parent, cancellationToken);
-                    return GenerateConstructorHelpers.GetDelegatingConstructor(symbolInfo, candidates, namedType);
+                    return GenerateConstructorHelpers.GetDelegatingConstructor(
+                        document, symbolInfo, candidates, namedType, state.ParameterTypes);
                 }
             }
 

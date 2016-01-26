@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!-- Copyright (c)  Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information. -->
 
 <Tree Root="SyntaxNode">
@@ -591,11 +591,10 @@
       </PropertyComment>
     </Field>
     <Field Name="ColonToken" Type="SyntaxToken">
-      <Kind Name="ColonToken">
-        <PropertyComment>
-          <summary>SyntaxToken representing the colon.</summary>
-        </PropertyComment>
-      </Kind>
+      <Kind Name="ColonToken"/>
+      <PropertyComment>
+        <summary>SyntaxToken representing the colon.</summary>
+      </PropertyComment>
     </Field>
     <Field Name="WhenFalse" Type="ExpressionSyntax">
       <PropertyComment>
@@ -3989,6 +3988,19 @@
     </Field>
     <Field Name="File" Type="SyntaxToken">
       <Kind Name="StringLiteralToken"/>
+    </Field>
+    <Field Name="EndOfDirectiveToken" Type="SyntaxToken" Override="true">
+      <Kind Name="EndOfDirectiveToken"/>
+    </Field>
+    <Field Name="IsActive" Type="bool" Override="true"/>
+  </Node>
+  <Node Name="ShebangDirectiveTriviaSyntax" Base="DirectiveTriviaSyntax">
+    <Kind Name="ShebangDirectiveTrivia"/>
+    <Field Name="HashToken" Type="SyntaxToken" Override="true">
+      <Kind Name="HashToken"/>
+    </Field>
+    <Field Name="ExclamationToken" Type="SyntaxToken">
+      <Kind Name="ExclamationToken"/>
     </Field>
     <Field Name="EndOfDirectiveToken" Type="SyntaxToken" Override="true">
       <Kind Name="EndOfDirectiveToken"/>

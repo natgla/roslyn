@@ -55,7 +55,7 @@ Namespace Microsoft.CodeAnalysis.Editor.UnitTests.Rename
         End Sub
 
         Public Shared Function Create(workspaceXml As XElement, renameTo As String, Optional changedOptionSet As Dictionary(Of OptionKey, Object) = Nothing) As RenameEngineResult
-            Dim workspace = TestWorkspaceFactory.CreateWorkspace(workspaceXml)
+            Dim workspace = TestWorkspace.CreateWorkspace(workspaceXml)
 
             Dim engineResult As RenameEngineResult = Nothing
             Try
@@ -196,7 +196,7 @@ Namespace Microsoft.CodeAnalysis.Editor.UnitTests.Rename
                 End If
 
                 Assert.Equal(replacementText, newText)
-            Catch ex As AssertException
+            Catch ex As XunitException
                 _failedAssert = True
                 Throw
             End Try
@@ -212,7 +212,7 @@ Namespace Microsoft.CodeAnalysis.Editor.UnitTests.Rename
                 Assert.True(type.HasFlag(reference.Type))
 
                 _unassertedRelatedLocations.Remove(reference)
-            Catch ex As AssertException
+            Catch ex As XunitException
                 _failedAssert = True
                 Throw
             End Try
@@ -241,7 +241,7 @@ Namespace Microsoft.CodeAnalysis.Editor.UnitTests.Rename
         Public Sub AssertReplacementTextInvalid()
             Try
                 Assert.False(_resolution.ReplacementTextValid)
-            Catch ex As AssertException
+            Catch ex As XunitException
                 _failedAssert = True
                 Throw
             End Try

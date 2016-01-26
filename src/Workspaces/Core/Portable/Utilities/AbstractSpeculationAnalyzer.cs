@@ -379,11 +379,16 @@ namespace Microsoft.CodeAnalysis.Shared.Utilities
                 {
                     var type = methodSymbol.ContainingType;
                     var newType = newMethodSymbol.ContainingType;
-                    if ((type != null && type.IsEnumType() &&
-                         type.EnumUnderlyingType != null && type.EnumUnderlyingType.SpecialType == newType.SpecialType) ||
-                        (newType != null && newType.IsEnumType() &&
-                         newType.EnumUnderlyingType != null && newType.EnumUnderlyingType.SpecialType == type.SpecialType))
-                    {
+                    if ((type != null && newType != null) &&
+                        (
+                            type.IsEnumType() &&
+                            type.EnumUnderlyingType != null && 
+                            type.EnumUnderlyingType.SpecialType == newType.SpecialType) ||
+                        (
+                            newType.IsEnumType() &&
+                            newType.EnumUnderlyingType != null && 
+                            newType.EnumUnderlyingType.SpecialType == type.SpecialType))
+                    { 
                         return true;
                     }
                 }
@@ -396,7 +401,7 @@ namespace Microsoft.CodeAnalysis.Shared.Utilities
 
         /// <summary>
         /// Determines whether performing the given syntax replacement will change the semantics of any parenting expressions
-        /// by performing a bottom up walk from the <see cref="OriginalExpression"/> upto <see cref="SemanticRootOfOriginalExpression"/>
+        /// by performing a bottom up walk from the <see cref="OriginalExpression"/> up to <see cref="SemanticRootOfOriginalExpression"/>
         /// in the original tree and simultaneously walking bottom up from <see cref="ReplacedExpression"/> up to <see cref="SemanticRootOfReplacedExpression"/>
         /// in the speculated syntax tree and performing appropriate semantic comparisons.
         /// </summary>
@@ -599,7 +604,7 @@ namespace Microsoft.CodeAnalysis.Shared.Utilities
             {
                 // Note this is likely an interface member from IEnumerable but the new member may be a
                 // GetEnumerator method on a specific type.
-                if (getEnumerator.IsImplementable())
+                if (getEnumerator.IsImplementableMember())
                 {
                     var expressionType = this.SpeculativeSemanticModel.GetTypeInfo(newForEachStatementExpression, _cancellationToken).ConvertedType;
                     if (expressionType != null)
@@ -687,7 +692,7 @@ namespace Microsoft.CodeAnalysis.Shared.Utilities
                 // Original and new symbols for the invocation expression are compatible.
                 // However, if the symbols are interface members and if the receiver symbol for one of the expressions is a possible ValueType type parameter,
                 // and the other one is not, then there might be a boxing conversion at runtime which causes different runtime behavior.
-                if (symbol.IsImplementable())
+                if (symbol.IsImplementableMember())
                 {
                     if (IsReceiverNonUniquePossibleValueTypeParam(expression, this.OriginalSemanticModel) !=
                         IsReceiverNonUniquePossibleValueTypeParam(newExpression, this.SpeculativeSemanticModel))
@@ -719,7 +724,7 @@ namespace Microsoft.CodeAnalysis.Shared.Utilities
                 }
             }
 
-            if (symbol.IsImplementable() &&
+            if (symbol.IsImplementableMember() &&
                 IsCompatibleInterfaceMemberImplementation(symbol, newSymbol, expression, newExpression, this.SpeculativeSemanticModel))
             {
                 return false;
@@ -744,7 +749,7 @@ namespace Microsoft.CodeAnalysis.Shared.Utilities
             return true;
         }
 
-        protected bool ReplacementBreaksCompoundAssignExpression(
+        protected bool ReplacementBreaksCompoundAssignment(
             TExpressionSyntax originalLeft,
             TExpressionSyntax originalRight,
             TExpressionSyntax newLeft,

@@ -998,7 +998,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             ElseIf attrData.IsTargetAttribute(Me, AttributeDescription.AssemblyVersionAttribute) Then
                 Dim verString = DirectCast(attrData.CommonConstructorArguments(0).Value, String)
                 Dim version As Version = Nothing
-                If Not VersionHelper.TryParseAssemblyVersion(verString, allowWildcard:=True, version:=version) Then
+                If Not VersionHelper.TryParseAssemblyVersion(verString, allowWildcard:=Not _compilation.IsEmitDeterministic, version:=version) Then
                     arguments.Diagnostics.Add(ERRID.ERR_InvalidVersionFormat, GetAssemblyAttributeFirstArgumentLocation(arguments.AttributeSyntaxOpt))
                 End If
                 arguments.GetOrCreateData(Of CommonAssemblyWellKnownAttributeData)().AssemblyVersionAttributeSetting = version
@@ -1162,8 +1162,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                             emitExtensionAttribute = ThreeState.True
                         End If
                     End If
-
                 End If
+
+                Debug.Assert(_lazyEmitExtensionAttribute = ThreeState.Unknown OrElse
+                             _lazyEmitExtensionAttribute = emitExtensionAttribute)
+
+                _lazyEmitExtensionAttribute = emitExtensionAttribute
 
                 'strong name key settings are not validated when building netmodules.
                 'They are validated when the netmodule is added to an assembly.
@@ -1180,6 +1184,10 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                     diagnostics.Add(ERRID.WRN_DelaySignButNoKey, NoLocation.Singleton)
                 End If
 
+                If DeclaringCompilation.Options.PublicSign AndAlso Not Identity.HasPublicKey Then
+                    diagnostics.Add(ERRID.ERR_PublicSignNoKey, NoLocation.Singleton)
+                End If
+
                 ' If the options and attributes applied on the compilation imply real signing,
                 ' but we have no private key to sign it with report an error.
                 ' Note that if public key is set and delay sign is off we do OSS signing, which doesn't require private key.
@@ -1189,6 +1197,7 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                    DeclaringCompilation.Options.CryptoPublicKey.IsEmpty AndAlso
                    Identity.HasPublicKey AndAlso
                    Not IsDelaySigned AndAlso
+                   Not DeclaringCompilation.Options.PublicSign AndAlso
                    Not StrongNameKeys.CanSign Then
 
                     ' Since the container always contains both keys, the problem is that the key file didn't contain private key.
@@ -1196,13 +1205,9 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
                 End If
 
                 ReportDiagnosticsForSynthesizedAttributes(DeclaringCompilation, diagnostics)
-
                 ReportDiagnosticsForAddedModules(diagnostics)
 
-                Dim vbDiagnostics = diagnostics.ToReadOnlyAndFree(Of Diagnostic)()
-                If ImmutableInterlocked.InterlockedInitialize(_lazyAssemblyLevelDeclarationErrors, vbDiagnostics) Then
-                    _lazyEmitExtensionAttribute = emitExtensionAttribute
-                End If
+                ImmutableInterlocked.InterlockedInitialize(_lazyAssemblyLevelDeclarationErrors, diagnostics.ToReadOnlyAndFree(Of Diagnostic)())
             End If
 
             Return _lazyAssemblyLevelDeclarationErrors
@@ -1210,6 +1215,12 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
 
         Private Sub DetectAttributeAndOptionConflicts(diagnostics As DiagnosticBag)
             EnsureAttributesAreBound()
+
+            If _compilation.Options.PublicSign AndAlso DelaySignAttributeSetting Then
+                diagnostics.Add(ERRID.ERR_CmdOptionConflictsSource, NoLocation.Singleton,
+                                AttributeDescription.AssemblyDelaySignAttribute.FullName,
+                                NameOf(_compilation.Options.PublicSign))
+            End If
 
             If _compilation.Options.OutputKind = OutputKind.NetModule Then
                 If Not String.IsNullOrEmpty(_compilation.Options.CryptoKeyContainer) Then
@@ -1601,7 +1612,14 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             ' Creating strong names is a potentially expensive operation, so we will check again here
             ' if keys could have been created and published already.
             If _lazyStrongNameKeys Is Nothing Then
-                Dim keys = StrongNameKeys.Create(DeclaringCompilation.Options.StrongNameProvider, keyFile, keyContainer, MessageProvider.Instance)
+                Dim keys As StrongNameKeys
+
+                ' Public signing doesn't require a strong name provider to be used. 
+                If DeclaringCompilation.Options.PublicSign AndAlso keyFile IsNot Nothing Then
+                    keys = StrongNameKeys.Create(keyFile, MessageProvider.Instance)
+                Else
+                    keys = StrongNameKeys.Create(DeclaringCompilation.Options.StrongNameProvider, keyFile, keyContainer, MessageProvider.Instance)
+                End If
                 Interlocked.CompareExchange(_lazyStrongNameKeys, keys, Nothing)
             End If
         End Sub
@@ -1665,5 +1683,8 @@ Namespace Microsoft.CodeAnalysis.VisualBasic.Symbols
             Return Nothing
         End Function
 
+        Public Overrides Function GetMetadata() As AssemblyMetadata
+            Return Nothing
+        End Function
     End Class
 End Namespace

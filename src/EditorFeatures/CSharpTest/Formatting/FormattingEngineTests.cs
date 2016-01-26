@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Editor.Commands;
 using Microsoft.CodeAnalysis.Editor.Implementation.Formatting;
 using Microsoft.CodeAnalysis.Editor.Options;
@@ -20,10 +21,10 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.UnitTests.Formatting
 {
     public class FormattingEngineTests : FormattingEngineTestBase
     {
-        [Fact]
+        [WpfFact]
         [WorkItem(539682)]
         [Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void FormatDocumentCommandHandler()
+        public async Task FormatDocumentCommandHandler()
         {
             var code = @"class Program
 {
@@ -45,13 +46,13 @@ int y;
 }
 ";
 
-            AssertFormatWithView(expected, code);
+            await AssertFormatWithViewAsync(expected, code);
         }
 
-        [Fact]
+        [WpfFact]
         [WorkItem(539682)]
         [Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void FormatDocumentPasteCommandHandler()
+        public async Task FormatDocumentPasteCommandHandler()
         {
             var code = @"class Program
 {
@@ -73,13 +74,13 @@ int y;
 }
 ";
 
-            AssertFormatWithPasteOrReturn(expected, code, allowDocumentChanges: true);
+            await AssertFormatWithPasteOrReturnAsync(expected, code, allowDocumentChanges: true);
         }
 
-        [Fact]
+        [WpfFact]
         [WorkItem(547261)]
         [Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void FormatDocumentReadOnlyWorkspacePasteCommandHandler()
+        public async Task FormatDocumentReadOnlyWorkspacePasteCommandHandler()
         {
             var code = @"class Program
 {
@@ -101,13 +102,13 @@ int y;
 }
 ";
 
-            AssertFormatWithPasteOrReturn(expected, code, allowDocumentChanges: false);
+            await AssertFormatWithPasteOrReturnAsync(expected, code, allowDocumentChanges: false);
         }
 
-        [Fact]
+        [WpfFact]
         [WorkItem(912965)]
         [Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void FormatUsingStatementOnReturn()
+        public async Task FormatUsingStatementOnReturn()
         {
             var code = @"class Program
 {
@@ -129,13 +130,13 @@ int y;
 }
 ";
 
-            AssertFormatWithPasteOrReturn(expected, code, allowDocumentChanges: true, isPaste: false);
+            await AssertFormatWithPasteOrReturnAsync(expected, code, allowDocumentChanges: true, isPaste: false);
         }
 
-        [Fact]
+        [WpfFact]
         [WorkItem(912965)]
         [Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void FormatNotUsingStatementOnReturn()
+        public async Task FormatNotUsingStatementOnReturn()
         {
             var code = @"class Program
 {
@@ -157,12 +158,12 @@ int y;
 }
 ";
 
-            AssertFormatWithPasteOrReturn(expected, code, allowDocumentChanges: true, isPaste: false);
+            await AssertFormatWithPasteOrReturnAsync(expected, code, allowDocumentChanges: true, isPaste: false);
         }
 
         [WorkItem(977133)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void DoNotFormatRangeButFormatTokenOnOpenBrace()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task DoNotFormatRangeButFormatTokenOnOpenBrace()
         {
             var code = @"class C
 {
@@ -178,12 +179,12 @@ int y;
         if (true) {
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(1007071)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void FormatPragmaWarningInbetweenDelegateDeclarationStatement()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task FormatPragmaWarningInbetweenDelegateDeclarationStatement()
         {
             var code = @"using System;
 
@@ -211,12 +212,12 @@ class Program
         };
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(771761)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void FormatHashRegion()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task FormatHashRegion()
         {
             var code = @"using System;
 
@@ -236,12 +237,12 @@ class Program
         #region
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(771761)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void FormatHashEndRegion()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task FormatHashEndRegion()
         {
             var code = @"using System;
 
@@ -263,12 +264,12 @@ class Program
         #endregion
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(987373)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void FormatSpansIndividuallyWithoutCollapsing()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task FormatSpansIndividuallyWithoutCollapsing()
         {
             var code = @"class C
 {
@@ -348,13 +349,13 @@ class Program
         if (true) { }
     }
 }";
-            using (var workspace = CSharpWorkspaceFactory.CreateWorkspaceFromFile(code))
+            using (var workspace = await TestWorkspace.CreateCSharpAsync(code))
             {
                 var subjectDocument = workspace.Documents.Single();
                 var spans = subjectDocument.SelectedSpans;
 
                 var document = workspace.CurrentSolution.Projects.Single().Documents.Single();
-                var syntaxRoot = document.GetSyntaxRootAsync().Result;
+                var syntaxRoot = await document.GetSyntaxRootAsync();
 
                 var node = Formatter.Format(syntaxRoot, spans, workspace);
                 Assert.Equal(expected, node.ToFullString());
@@ -362,8 +363,8 @@ class Program
         }
 
         [WorkItem(987373)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void FormatSpansWithCollapsing()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task FormatSpansWithCollapsing()
         {
             var code = @"class C
 {
@@ -443,14 +444,14 @@ class Program
         if (true) { }
     }
 }";
-            using (var workspace = CSharpWorkspaceFactory.CreateWorkspaceFromFile(code))
+            using (var workspace = await TestWorkspace.CreateCSharpAsync(code))
             {
                 var subjectDocument = workspace.Documents.Single();
                 var spans = subjectDocument.SelectedSpans;
                 workspace.Options = workspace.Options.WithChangedOption(FormattingOptions.AllowDisjointSpanMerging, true);
 
                 var document = workspace.CurrentSolution.Projects.Single().Documents.Single();
-                var syntaxRoot = document.GetSyntaxRootAsync().Result;
+                var syntaxRoot = await document.GetSyntaxRootAsync();
 
                 var node = Formatter.Format(syntaxRoot, spans, workspace);
                 Assert.Equal(expected, node.ToFullString());
@@ -458,8 +459,8 @@ class Program
         }
 
         [WorkItem(1044118)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void SemicolonInCommentOnLastLineDoesNotFormat()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task SemicolonInCommentOnLastLineDoesNotFormat()
         {
             var code = @"using System;
 
@@ -480,13 +481,13 @@ class Program
         }
 }
 // ;";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(449)]
         [WorkItem(1077103)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void NoFormattingInsideSingleLineRegularComment_1()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task NoFormattingInsideSingleLineRegularComment_1()
         {
             var code = @"class Program
 {
@@ -505,13 +506,13 @@ class Program
 
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(449)]
         [WorkItem(1077103)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void NoFormattingInsideSingleLineRegularComment_2()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task NoFormattingInsideSingleLineRegularComment_2()
         {
             var code = @"class Program
 {
@@ -530,15 +531,15 @@ class Program
 
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
 
 
         [WorkItem(449)]
         [WorkItem(1077103)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void NoFormattingInsideMultiLineRegularComment_1()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task NoFormattingInsideMultiLineRegularComment_1()
         {
             var code = @"class Program
 {
@@ -555,13 +556,13 @@ class Program
 
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(449)]
         [WorkItem(1077103)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void NoFormattingInsideMultiLineRegularComment_2()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task NoFormattingInsideMultiLineRegularComment_2()
         {
             var code = @"class Program
 {
@@ -580,13 +581,13 @@ class Program
 
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(449)]
         [WorkItem(1077103)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void NoFormattingInsideMultiLineRegularComment_3()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task NoFormattingInsideMultiLineRegularComment_3()
         {
             var code = @"class Program
 {
@@ -605,13 +606,13 @@ class Program
 
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(449)]
         [WorkItem(1077103)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void NoFormattingInsideSingleLineDocComment_1()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task NoFormattingInsideSingleLineDocComment_1()
         {
             var code = @"class Program
 {
@@ -630,13 +631,13 @@ class Program
 
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(449)]
         [WorkItem(1077103)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void NoFormattingInsideSingleLineDocComment_2()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task NoFormattingInsideSingleLineDocComment_2()
         {
             var code = @"class Program
 {
@@ -655,13 +656,13 @@ class Program
 
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(449)]
         [WorkItem(1077103)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void NoFormattingInsideMultiLineDocComment_1()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task NoFormattingInsideMultiLineDocComment_1()
         {
             var code = @"class Program
 {
@@ -680,13 +681,13 @@ class Program
 
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(449)]
         [WorkItem(1077103)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void NoFormattingInsideMultiLineDocComment_2()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task NoFormattingInsideMultiLineDocComment_2()
         {
             var code = @"class Program
 {
@@ -707,13 +708,13 @@ class Program
 
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(449)]
         [WorkItem(1077103)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void NoFormattingInsideMultiLineDocComment_3()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task NoFormattingInsideMultiLineDocComment_3()
         {
             var code = @"class Program
 {
@@ -734,13 +735,13 @@ class Program
 
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(449)]
         [WorkItem(1077103)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void NoFormattingInsideInactiveCode()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task NoFormattingInsideInactiveCode()
         {
             var code = @"class Program
 {
@@ -765,13 +766,13 @@ class Program
 
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(449)]
         [WorkItem(1077103)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void NoFormattingInsideStringLiteral()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task NoFormattingInsideStringLiteral()
         {
             var code = @"class Program
 {
@@ -788,13 +789,13 @@ class Program
         var asdas =     ""{""        ;
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(449)]
         [WorkItem(1077103)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void NoFormattingInsideCharLiteral()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task NoFormattingInsideCharLiteral()
         {
             var code = @"class Program
 {
@@ -811,13 +812,13 @@ class Program
         var asdas =     '{'        ;
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(449)]
         [WorkItem(1077103)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void NoFormattingInsideCommentsOfPreprocessorDirectives()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task NoFormattingInsideCommentsOfPreprocessorDirectives()
         {
             var code = @"class Program
 {
@@ -838,13 +839,13 @@ class Program
         
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(464)]
         [WorkItem(908729)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void ColonInSwitchCase()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task ColonInSwitchCase()
         {
             var code = @"class Program
 {
@@ -869,13 +870,13 @@ class Program
         }
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(464)]
         [WorkItem(908729)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void ColonInDefaultSwitchCase()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task ColonInDefaultSwitchCase()
         {
             var code = @"class Program
 {
@@ -902,13 +903,13 @@ class Program
         }
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(464)]
         [WorkItem(908729)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void ColonInLabeledStatement()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task ColonInLabeledStatement()
         {
             var code = @"class Program
 {
@@ -925,13 +926,13 @@ class Program
             label1:   int s = 0;
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(464)]
         [WorkItem(908729)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void DoNotFormatColonInTargetAttribute()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task DoNotFormatColonInTargetAttribute()
         {
             var code = @"using System;
 [method    :$$    C]
@@ -944,13 +945,13 @@ class C : Attribute
 class C : Attribute
 {
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(464)]
         [WorkItem(908729)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void DoNotFormatColonInBaseList()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task DoNotFormatColonInBaseList()
         {
             var code = @"class C   :$$   Attribute
 {
@@ -959,13 +960,13 @@ class C : Attribute
             var expected = @"class C   :   Attribute
 {
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(464)]
         [WorkItem(908729)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void DoNotFormatColonInThisConstructor()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task DoNotFormatColonInThisConstructor()
         {
             var code = @"class Foo
 {
@@ -988,13 +989,13 @@ class C : Attribute
     {
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(464)]
         [WorkItem(908729)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void DoNotFormatColonInConditionalOperator()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task DoNotFormatColonInConditionalOperator()
         {
             var code = @"class Program
 {
@@ -1011,13 +1012,13 @@ class C : Attribute
         var vari = foo()     ?    true  :  false;
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(464)]
         [WorkItem(908729)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void DoNotFormatColonInArgument()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task DoNotFormatColonInArgument()
         {
             var code = @"class Program
 {
@@ -1034,13 +1035,13 @@ class C : Attribute
         Main(args  :  args);
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(464)]
         [WorkItem(908729)]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void DoNotFormatColonInTypeParameter()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task DoNotFormatColonInTypeParameter()
         {
             var code = @"class Program<T>
 {
@@ -1059,12 +1060,12 @@ class C : Attribute
 
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
         [WorkItem(2224, "https://github.com/dotnet/roslyn/issues/2224")]
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void DontSmartFormatBracesOnSmartIndentNone()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task DontSmartFormatBracesOnSmartIndentNone()
         {
             var code = @"class Program<T>
 {
@@ -1081,12 +1082,12 @@ class C : Attribute
                             {
                                 { new OptionKey(FormattingOptions.SmartIndent, LanguageNames.CSharp), FormattingOptions.IndentStyle.None }
                             };
-            AssertFormatAfterTypeChar(code, expected, optionSet);
+            await AssertFormatAfterTypeCharAsync(code, expected, optionSet);
         }
 
-        [Fact]
+        [WpfFact]
         [Trait(Traits.Feature, Traits.Features.SmartTokenFormatting)]
-        public void StillAutoIndentCloseBraceWhenFormatOnCloseBraceIsOff()
+        public async Task StillAutoIndentCloseBraceWhenFormatOnCloseBraceIsOff()
         {
             var code = @"namespace N
 {
@@ -1113,11 +1114,11 @@ class C : Attribute
                     { new OptionKey(FeatureOnOffOptions.AutoFormattingOnCloseBrace, LanguageNames.CSharp), false }
             };
 
-            AssertFormatAfterTypeChar(code, expected, optionSet);
+            await AssertFormatAfterTypeCharAsync(code, expected, optionSet);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void DoNotFormatIncompleteBlockOnSingleLineIfNotTypingCloseCurly1()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task DoNotFormatIncompleteBlockOnSingleLineIfNotTypingCloseCurly1()
         {
             var code = @"namespace ConsoleApplication1
 {
@@ -1137,11 +1138,11 @@ class C : Attribute
             get { return true;
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void DoNotFormatIncompleteBlockOnSingleLineIfNotTypingCloseCurly2()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task DoNotFormatIncompleteBlockOnSingleLineIfNotTypingCloseCurly2()
         {
             var code = @"namespace ConsoleApplication1
 {
@@ -1157,11 +1158,11 @@ class C : Attribute
         static bool Property { get { return true;
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void DoNotFormatIncompleteBlockOnSingleLineIfNotTypingCloseCurly3()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task DoNotFormatIncompleteBlockOnSingleLineIfNotTypingCloseCurly3()
         {
             var code = @"namespace ConsoleApplication1
 {
@@ -1177,11 +1178,11 @@ class C : Attribute
         static bool Property { get;
     }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void DoNotFormatCompleteBlockOnSingleLineIfTypingCloseCurly1()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task DoNotFormatCompleteBlockOnSingleLineIfTypingCloseCurly1()
         {
             var code = @"namespace ConsoleApplication1
 {
@@ -1199,11 +1200,11 @@ class C : Attribute
         {
             get { return true; }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void DoNotFormatCompleteBlockOnSingleLineIfTypingCloseCurly2()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task DoNotFormatCompleteBlockOnSingleLineIfTypingCloseCurly2()
         {
             var code = @"namespace ConsoleApplication1
 {
@@ -1217,11 +1218,11 @@ class C : Attribute
     {
         static bool Property { get { return true; }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void FormatIncompleteBlockOnMultipleLinesIfTypingCloseCurly1()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task FormatIncompleteBlockOnMultipleLinesIfTypingCloseCurly1()
         {
             var code = @"namespace ConsoleApplication1
 {
@@ -1243,11 +1244,11 @@ class C : Attribute
                 return true;
             }
 }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.Formatting)]
-        public void FormatIncompleteBlockOnMultipleLinesIfTypingCloseCurly2()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.Formatting)]
+        public async Task FormatIncompleteBlockOnMultipleLinesIfTypingCloseCurly2()
         {
             var code = @"namespace ConsoleApplication1
 {
@@ -1269,12 +1270,12 @@ class C : Attribute
                 return true;
             }
         }";
-            AssertFormatAfterTypeChar(code, expected);
+            await AssertFormatAfterTypeCharAsync(code, expected);
         }
 
-        private static void AssertFormatAfterTypeChar(string code, string expected, Dictionary<OptionKey, object> changedOptionSet = null)
+        private static async Task AssertFormatAfterTypeCharAsync(string code, string expected, Dictionary<OptionKey, object> changedOptionSet = null)
         {
-            using (var workspace = CSharpWorkspaceFactory.CreateWorkspaceFromFile(code))
+            using (var workspace = await TestWorkspace.CreateCSharpAsync(code))
             {
                 if (changedOptionSet != null)
                 {

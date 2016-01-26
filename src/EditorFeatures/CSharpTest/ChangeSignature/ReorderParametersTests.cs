@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
 using System;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.CodeRefactorings.ChangeSignature;
 using Microsoft.CodeAnalysis.Editor.UnitTests.ChangeSignature;
 using Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces;
@@ -11,8 +12,8 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.UnitTests.ChangeSignature
 {
     public partial class ChangeSignatureTests : AbstractChangeSignatureTests
     {
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderMethodParameters()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderMethodParameters()
         {
             var markup = @"
 using System;
@@ -32,11 +33,11 @@ class MyClass
     }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderMethodParametersAndArguments()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderMethodParametersAndArguments()
         {
             var markup = @"
 using System;
@@ -58,11 +59,11 @@ class MyClass
     }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderMethodParametersAndArgumentsOfNestedCalls()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderMethodParametersAndArgumentsOfNestedCalls()
         {
             var markup = @"
 using System;
@@ -84,11 +85,11 @@ class MyClass
     }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderConstructorParametersAndArguments()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderConstructorParametersAndArguments()
         {
             var markup = @"
 using System;
@@ -134,11 +135,11 @@ class MyClass
     }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderAttributeConstructorParametersAndArguments()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderAttributeConstructorParametersAndArguments()
         {
             var markup = @"
 [My(""test"", 8)]
@@ -166,11 +167,11 @@ class MyAttribute : System.Attribute
     }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderExtensionMethodParametersAndArguments_StaticCall()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderExtensionMethodParametersAndArguments_StaticCall()
         {
             var markup = @"
 public class C
@@ -202,11 +203,11 @@ public static class CExt
     { }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderExtensionMethodParametersAndArguments_ExtensionCall()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderExtensionMethodParametersAndArguments_ExtensionCall()
         {
             var markup = @"
 public class C
@@ -238,11 +239,11 @@ public static class CExt
     { }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderParamsMethodParametersAndArguments_ParamsAsArray()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderParamsMethodParametersAndArguments_ParamsAsArray()
         {
             var markup = @"
 public class C
@@ -262,11 +263,11 @@ public class C
     }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderParamsMethodParametersAndArguments_ParamsExpanded()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderParamsMethodParametersAndArguments_ParamsExpanded()
         {
             var markup = @"
 public class C
@@ -286,11 +287,11 @@ public class C
     }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderExtensionAndParamsMethodParametersAndArguments_VariedCallsites()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderExtensionAndParamsMethodParametersAndArguments_VariedCallsites()
         {
             var markup = @"
 public class C
@@ -328,11 +329,11 @@ public static class CExt
     { }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderIndexerParametersAndArguments()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderIndexerParametersAndArguments()
         {
             var markup = @"
 class Program
@@ -366,11 +367,11 @@ class Program
     }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact(Skip = "908023"), Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderCollectionInitializerAddMethodParametersAndArguments()
+        [WpfFact(Skip = "908023"), Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderCollectionInitializerAddMethodParametersAndArguments()
         {
             var markup = @"
 using System;
@@ -422,11 +423,11 @@ class Program : IEnumerable
     }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderParamTagsInDocComments_SingleLineDocComments_OnIndividualLines()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderParamTagsInDocComments_SingleLineDocComments_OnIndividualLines()
         {
             var markup = @"
 public class C
@@ -452,11 +453,11 @@ public class C
     }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderParamTagsInDocComments_SingleLineDocComments_OnSameLine()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderParamTagsInDocComments_SingleLineDocComments_OnSameLine()
         {
             var markup = @"
 public class C
@@ -478,11 +479,11 @@ public class C
     }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderParamTagsInDocComments_SingleLineDocComments_MixedLineDistribution()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderParamTagsInDocComments_SingleLineDocComments_MixedLineDistribution()
         {
             var markup = @"
 public class C
@@ -514,11 +515,11 @@ public class C
     }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderParamTagsInDocComments_SingleLineDocComments_MixedWithRegularComments()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderParamTagsInDocComments_SingleLineDocComments_MixedWithRegularComments()
         {
             var markup = @"
 public class C
@@ -544,11 +545,11 @@ public class C
     }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderParamTagsInDocComments_MultiLineDocComments_OnSeparateLines1()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderParamTagsInDocComments_MultiLineDocComments_OnSeparateLines1()
         {
             var markup = @"
 class Program
@@ -576,11 +577,11 @@ class Program
     }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderParamTagsInDocComments_MultiLineDocComments_OnSingleLine()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderParamTagsInDocComments_MultiLineDocComments_OnSingleLine()
         {
             var markup = @"
 class Program
@@ -600,11 +601,11 @@ class Program
     }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderParamTagsInDocComments_IncorrectOrder_MaintainsOrder()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderParamTagsInDocComments_IncorrectOrder_MaintainsOrder()
         {
             var markup = @"
 public class C
@@ -629,11 +630,11 @@ public class C
 
     }
 }";
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderParamTagsInDocComments_WrongNames_MaintainsOrder()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderParamTagsInDocComments_WrongNames_MaintainsOrder()
         {
             var markup = @"
 public class C
@@ -658,11 +659,11 @@ public class C
 
     }
 }";
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderParamTagsInDocComments_InsufficientTags_MaintainsOrder()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderParamTagsInDocComments_InsufficientTags_MaintainsOrder()
         {
             var markup = @"
 public class C
@@ -685,11 +686,11 @@ public class C
 
     }
 }";
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderParamTagsInDocComments_ExcessiveTags_MaintainsOrder()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderParamTagsInDocComments_ExcessiveTags_MaintainsOrder()
         {
             var markup = @"
 public class C
@@ -716,11 +717,11 @@ public class C
 
     }
 }";
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderParamTagsInDocComments_OnConstructors()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderParamTagsInDocComments_OnConstructors()
         {
             var markup = @"
 public class C
@@ -745,11 +746,11 @@ public class C
 
     }
 }";
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderParamTagsInDocComments_OnIndexers()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderParamTagsInDocComments_OnIndexers()
         {
             var markup = @"
 public class C
@@ -776,11 +777,11 @@ public class C
         set { }
     }
 }";
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderParametersInCrefs()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderParametersInCrefs()
         {
             var markup = @"
 class C
@@ -802,11 +803,11 @@ class C
     { }
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderParametersInMethodThatImplementsInterfaceMethodOnlyThroughADerivedType1()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderParametersInMethodThatImplementsInterfaceMethodOnlyThroughADerivedType1()
         {
             var markup = @"
 interface I
@@ -842,11 +843,11 @@ class D : C, I
 {
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
-        public void ReorderParametersInMethodThatImplementsInterfaceMethodOnlyThroughADerivedType2()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.ChangeSignature)]
+        public async Task ReorderParametersInMethodThatImplementsInterfaceMethodOnlyThroughADerivedType2()
         {
             var markup = @"
 interface I
@@ -882,7 +883,7 @@ class D : C, I
 {
 }";
 
-            TestChangeSignatureViaCommand(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
+            await TestChangeSignatureViaCommandAsync(LanguageNames.CSharp, markup, updatedSignature: permutation, expectedUpdatedInvocationDocumentCode: updatedCode);
         }
     }
 }

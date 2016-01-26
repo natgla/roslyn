@@ -27,7 +27,7 @@
           "lib/portable-net45+win8+wp8+wpa81/System.Composition.TypedParts.dll": {}
         }
       },
-      "Microsoft.DiaSymReader/1.0.5.1": {
+      "Microsoft.DiaSymReader/1.0.7-beta1-51221": {
         "compile": {
           "lib/net20/Microsoft.DiaSymReader.dll": {}
         },
@@ -35,21 +35,12 @@
           "lib/net20/Microsoft.DiaSymReader.dll": {}
         }
       },
-      "Microsoft.DiaSymReader.Native/1.1.0-alpha2": {},
-      "Microsoft.NETCore.Portable.Compatibility/1.0.0": {
+      "Microsoft.NETCore.Portable.Compatibility/1.0.1-beta-23504": {
         "compile": {
           "ref/net45/_._": {}
         },
         "runtime": {
           "lib/net45/_._": {}
-        }
-      },
-      "Newtonsoft.Json/6.0.4": {
-        "compile": {
-          "lib/net45/Newtonsoft.Json.dll": {}
-        },
-        "runtime": {
-          "lib/net45/Newtonsoft.Json.dll": {}
         }
       },
       "System.AppContext/4.0.0": {
@@ -82,27 +73,22 @@
           "lib/net46/_._": {}
         }
       },
-      "System.Collections.Immutable/1.1.36": {
-        "compile": {
-          "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.dll": {}
-        },
-        "runtime": {
-          "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.dll": {}
-        }
-      },
-      "System.Console/4.0.0-beta-23123": {
+      "System.Collections.Immutable/1.1.37": {
         "dependencies": {
-          "System.IO": "[4.0.0, )",
-          "System.Runtime": "[4.0.0, )"
+          "System.Collections": "[4.0.0, )",
+          "System.Diagnostics.Debug": "[4.0.0, )",
+          "System.Globalization": "[4.0.0, )",
+          "System.Linq": "[4.0.0, )",
+          "System.Resources.ResourceManager": "[4.0.0, )",
+          "System.Runtime": "[4.0.0, )",
+          "System.Runtime.Extensions": "[4.0.0, )",
+          "System.Threading": "[4.0.0, )"
         },
-        "frameworkAssemblies": [
-          "mscorlib"
-        ],
         "compile": {
-          "ref/net46/System.Console.dll": {}
+          "lib/dotnet/System.Collections.Immutable.dll": {}
         },
         "runtime": {
-          "lib/net46/System.Console.dll": {}
+          "lib/dotnet/System.Collections.Immutable.dll": {}
         }
       },
       "System.Diagnostics.Debug/4.0.10": {
@@ -217,15 +203,15 @@
           "lib/net45/_._": {}
         }
       },
-      "System.Reflection.Metadata/1.1.0-alpha-00014": {
+      "System.Reflection.Metadata/1.2.0-rc2-23608": {
         "dependencies": {
-          "System.Collections.Immutable": "[1.1.36, )"
+          "System.Collections.Immutable": "[1.1.37, )"
         },
         "compile": {
-          "lib/portable-net45+win8/System.Reflection.Metadata.dll": {}
+          "lib/dotnet5.2/System.Reflection.Metadata.dll": {}
         },
         "runtime": {
-          "lib/portable-net45+win8/System.Reflection.Metadata.dll": {}
+          "lib/dotnet5.2/System.Reflection.Metadata.dll": {}
         }
       },
       "System.Resources.ResourceManager/4.0.0": {
@@ -331,8 +317,8 @@
         "package/services/metadata/core-properties/12e2c94035674b25b911285cc26e3260.psmdcp"
       ]
     },
-    "Microsoft.DiaSymReader/1.0.5.1": {
-      "sha512": "s3ExUWlfkWt9cHcJQgrm4mS5Lfj91B6o2G9DD1zFA1/7aihXPL8W16Hyix+joyh8g3buxsxb0snwhPKQHb9ApA==",
+    "Microsoft.DiaSymReader/1.0.7-beta1-51221": {
+      "sha512": "sQ/I7+gi4Si8K7fqyJgMswip9RNvKjUD9CmmWwzcCxnX2sMLDA5X54thgX+cQn7nF0+C35a1nAYgafDsqiPOkg==",
       "type": "Package",
       "files": [
         "[Content_Types].xml",
@@ -342,23 +328,11 @@
         "lib/portable-net45+win8/Microsoft.DiaSymReader.dll",
         "lib/portable-net45+win8/Microsoft.DiaSymReader.xml",
         "Microsoft.DiaSymReader.nuspec",
-        "package/services/metadata/core-properties/4ff7fb1418cc465f82f38fc19097827f.psmdcp"
+        "package/services/metadata/core-properties/2e8b0ffd43c2417296e93e7c2ee8d686.psmdcp"
       ]
     },
-    "Microsoft.DiaSymReader.Native/1.1.0-alpha2": {
-      "sha512": "D9bGkcO1+s5c0jn4R/9BD3pw4gqyaFzC7XdlYBVDTqYMqVITMDpF8xxMXN0F3nZRl1dE54RGWp5k8GVAnMhpgQ==",
-      "type": "Package",
-      "files": [
-        "[Content_Types].xml",
-        "_rels/.rels",
-        "Microsoft.DiaSymReader.Native.nuspec",
-        "package/services/metadata/core-properties/e2e1c0f9faac4ddb951a90d33184740b.psmdcp",
-        "runtimes/win/native/Microsoft.DiaSymReader.Native.amd64.dll",
-        "runtimes/win/native/Microsoft.DiaSymReader.Native.x86.dll"
-      ]
-    },
-    "Microsoft.NETCore.Portable.Compatibility/1.0.0": {
-      "sha512": "5/IFqf2zN1jzktRJitxO+5kQ+0AilcIbPvSojSJwDG3cGNSMZg44LXLB5E9RkSETE0Wh4QoALdNh1koKoF7/mA==",
+    "Microsoft.NETCore.Portable.Compatibility/1.0.1-beta-23504": {
+      "sha512": "/12zABXWCTHNRBN6bNHxoqvmnJ1UKVaDSOR1BsAM+sv2aXjGMEM7bcDecvT/1zMKilWDmJpiPJJNCxjdZPQRTA==",
       "type": "Package",
       "files": [
         "[Content_Types].xml",
@@ -392,7 +366,7 @@
         "lib/wp80/_._",
         "lib/wpa81/_._",
         "Microsoft.NETCore.Portable.Compatibility.nuspec",
-        "package/services/metadata/core-properties/8131b8ae030a45e7986737a0c1d04ef5.psmdcp",
+        "package/services/metadata/core-properties/59347eb927634aa588ffb5e7d86d33e5.psmdcp",
         "ref/dotnet/mscorlib.dll",
         "ref/dotnet/System.ComponentModel.DataAnnotations.dll",
         "ref/dotnet/System.Core.dll",
@@ -436,31 +410,6 @@
         "runtimes/aot/lib/netcore50/System.Xml.dll",
         "runtimes/aot/lib/netcore50/System.Xml.Linq.dll",
         "runtimes/aot/lib/netcore50/System.Xml.Serialization.dll"
-      ]
-    },
-    "Newtonsoft.Json/6.0.4": {
-      "sha512": "FyQLmEpjsCrEP+znauLDGAi+h6i9YnaMkITlfIoiM4RYyX3nki306bTHsr/0okiIvIc7BJhQTbOAIZVocccFUw==",
-      "type": "Package",
-      "files": [
-        "[Content_Types].xml",
-        "_rels/.rels",
-        "lib/net20/Newtonsoft.Json.dll",
-        "lib/net20/Newtonsoft.Json.xml",
-        "lib/net35/Newtonsoft.Json.dll",
-        "lib/net35/Newtonsoft.Json.xml",
-        "lib/net40/Newtonsoft.Json.dll",
-        "lib/net40/Newtonsoft.Json.xml",
-        "lib/net45/Newtonsoft.Json.dll",
-        "lib/net45/Newtonsoft.Json.xml",
-        "lib/netcore45/Newtonsoft.Json.dll",
-        "lib/netcore45/Newtonsoft.Json.xml",
-        "lib/portable-net40+sl5+wp80+win8+wpa81/Newtonsoft.Json.dll",
-        "lib/portable-net40+sl5+wp80+win8+wpa81/Newtonsoft.Json.xml",
-        "lib/portable-net45+wp80+win8+wpa81/Newtonsoft.Json.dll",
-        "lib/portable-net45+wp80+win8+wpa81/Newtonsoft.Json.xml",
-        "Newtonsoft.Json.nuspec",
-        "package/services/metadata/core-properties/87a0a4e28d50417ea282e20f81bc6477.psmdcp",
-        "tools/install.ps1"
       ]
     },
     "System.AppContext/4.0.0": {
@@ -555,49 +504,18 @@
         "System.Collections.nuspec"
       ]
     },
-    "System.Collections.Immutable/1.1.36": {
-      "sha512": "MOlivTIeAIQPPMUPWIIoMCvZczjFRLYUWSYwqi1szu8QPyeIbsaPeI+hpXe1DzTxNwnRnmfYaoToi6kXIfSPNg==",
+    "System.Collections.Immutable/1.1.37": {
+      "sha512": "fTpqwZYBzoklTT+XjTRK8KxvmrGkYHzBiylCcKyQcxiOM8k+QvhNBxRvFHDWzy4OEP5f8/9n+xQ9mEgEXY+muA==",
       "type": "Package",
       "files": [
         "[Content_Types].xml",
         "_rels/.rels",
+        "lib/dotnet/System.Collections.Immutable.dll",
+        "lib/dotnet/System.Collections.Immutable.xml",
         "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.dll",
         "lib/portable-net45+win8+wp8+wpa81/System.Collections.Immutable.xml",
-        "License-Stable.rtf",
-        "package/services/metadata/core-properties/c8b7b781850445db852bd2d848380ca6.psmdcp",
+        "package/services/metadata/core-properties/a02fdeabe1114a24bba55860b8703852.psmdcp",
         "System.Collections.Immutable.nuspec"
-      ]
-    },
-    "System.Console/4.0.0-beta-23123": {
-      "sha512": "fPglodP4GQV7HBBDhmCZaCD8fzBvhtHmBmiN/8yWiJz0NNnA55YUNBh3myvR2DP/6IOHJ75/tTRkvwdpX3BWXA==",
-      "type": "Package",
-      "files": [
-        "[Content_Types].xml",
-        "_rels/.rels",
-        "lib/DNXCore50/System.Console.dll",
-        "lib/MonoAndroid10/_._",
-        "lib/MonoTouch10/_._",
-        "lib/net46/System.Console.dll",
-        "lib/xamarinios10/_._",
-        "lib/xamarinmac20/_._",
-        "package/services/metadata/core-properties/8d7a3fc8c6314a7b8e950ea4ca023405.psmdcp",
-        "ref/dotnet/de/System.Console.xml",
-        "ref/dotnet/es/System.Console.xml",
-        "ref/dotnet/fr/System.Console.xml",
-        "ref/dotnet/it/System.Console.xml",
-        "ref/dotnet/ja/System.Console.xml",
-        "ref/dotnet/ko/System.Console.xml",
-        "ref/dotnet/ru/System.Console.xml",
-        "ref/dotnet/System.Console.dll",
-        "ref/dotnet/System.Console.xml",
-        "ref/dotnet/zh-hans/System.Console.xml",
-        "ref/dotnet/zh-hant/System.Console.xml",
-        "ref/MonoAndroid10/_._",
-        "ref/MonoTouch10/_._",
-        "ref/net46/System.Console.dll",
-        "ref/xamarinios10/_._",
-        "ref/xamarinmac20/_._",
-        "System.Console.nuspec"
       ]
     },
     "System.Diagnostics.Debug/4.0.10": {
@@ -971,16 +889,17 @@
         "System.Reflection.Extensions.nuspec"
       ]
     },
-    "System.Reflection.Metadata/1.1.0-alpha-00014": {
-      "sha512": "rVeIWjVoLQS0aNrGdzndZReskyfxu4EfO9BKqT5GJt0YfGtlsHB1aDPnjl4jIBDTr+WJC9YsnZg8S5sKT1X42g==",
+    "System.Reflection.Metadata/1.2.0-rc2-23608": {
+      "sha512": "OTjZOWW+lJqVLkLeuZNWyNGL4PDSSJZIm5XPig0TOAwag46OyoEVz5t0AvE95SXj3mCaovSVpt8FvaXMiYt91w==",
       "type": "Package",
       "files": [
         "[Content_Types].xml",
         "_rels/.rels",
+        "lib/dotnet5.2/System.Reflection.Metadata.dll",
+        "lib/dotnet5.2/System.Reflection.Metadata.xml",
         "lib/portable-net45+win8/System.Reflection.Metadata.dll",
-        "lib/portable-net45+win8/System.Reflection.Metadata.pdb",
         "lib/portable-net45+win8/System.Reflection.Metadata.xml",
-        "package/services/metadata/core-properties/a48ecf967b1540bba8edfe9af3a99ea5.psmdcp",
+        "package/services/metadata/core-properties/c3d433fae9784b3da60bd437eacfbdd6.psmdcp",
         "System.Reflection.Metadata.nuspec"
       ]
     },

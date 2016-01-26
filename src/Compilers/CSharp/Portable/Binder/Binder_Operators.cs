@@ -623,8 +623,44 @@ namespace Microsoft.CodeAnalysis.CSharp
 
         private BoundExpression BindConditionalLogicalOperator(BinaryExpressionSyntax node, DiagnosticBag diagnostics)
         {
-            BoundExpression left = BindValue(node.Left, diagnostics, BindValueKind.RValue);
-            BoundExpression right = BindValue(node.Right, diagnostics, BindValueKind.RValue);
+            Debug.Assert(node.Kind() == SyntaxKind.LogicalOrExpression || node.Kind() == SyntaxKind.LogicalAndExpression);
+
+            // Do not blow the stack due to a deep recursion on the left. 
+
+            BinaryExpressionSyntax binary = node;
+            ExpressionSyntax child;
+
+            while (true)
+            {
+                child = binary.Left;
+                var childAsBinary = child as BinaryExpressionSyntax;
+
+                if (childAsBinary == null || 
+                    (childAsBinary.Kind() != SyntaxKind.LogicalOrExpression && childAsBinary.Kind() != SyntaxKind.LogicalAndExpression))
+                {
+                    break;
+                }
+
+                binary = childAsBinary;
+            }
+
+            BoundExpression left = BindValue(child, diagnostics, BindValueKind.RValue);
+
+            do
+            {
+                binary = (BinaryExpressionSyntax)child.Parent;
+                BoundExpression right = BindValue(binary.Right, diagnostics, BindValueKind.RValue);
+
+                left = BindConditionalLogicalOperator(binary, left, right, diagnostics);
+                child = binary;
+            }
+            while ((object)child != node);
+
+            return left;
+        }
+
+        private BoundExpression BindConditionalLogicalOperator(BinaryExpressionSyntax node, BoundExpression left, BoundExpression right, DiagnosticBag diagnostics)
+        {
             BinaryOperatorKind kind = SyntaxKindToBinaryOperatorKind(node.Kind());
 
             Debug.Assert(kind == BinaryOperatorKind.LogicalAnd || kind == BinaryOperatorKind.LogicalOr);
@@ -1541,7 +1577,8 @@ namespace Microsoft.CodeAnalysis.CSharp
             Debug.Assert(valueLeft != null);
             Debug.Assert(valueRight != null);
 
-            // Note that we do folding on single-precision floats as doubles to preserve precision.
+            // Note that we *cannot* do folding on single-precision floats as doubles to preserve precision,
+            // as that would cause incorrect rounding that would be impossible to correct afterwards.
             switch (kind)
             {
                 case BinaryOperatorKind.ObjectEqual:
@@ -1553,20 +1590,25 @@ namespace Microsoft.CodeAnalysis.CSharp
                     if (valueRight.IsNull) return true;
                     break;
                 case BinaryOperatorKind.DoubleAddition:
-                case BinaryOperatorKind.FloatAddition:
                     return valueLeft.DoubleValue + valueRight.DoubleValue;
+                case BinaryOperatorKind.FloatAddition:
+                    return valueLeft.SingleValue + valueRight.SingleValue;
                 case BinaryOperatorKind.DoubleSubtraction:
-                case BinaryOperatorKind.FloatSubtraction:
                     return valueLeft.DoubleValue - valueRight.DoubleValue;
+                case BinaryOperatorKind.FloatSubtraction:
+                    return valueLeft.SingleValue - valueRight.SingleValue;
                 case BinaryOperatorKind.DoubleMultiplication:
-                case BinaryOperatorKind.FloatMultiplication:
                     return valueLeft.DoubleValue * valueRight.DoubleValue;
+                case BinaryOperatorKind.FloatMultiplication:
+                    return valueLeft.SingleValue * valueRight.SingleValue;
                 case BinaryOperatorKind.DoubleDivision:
-                case BinaryOperatorKind.FloatDivision:
                     return valueLeft.DoubleValue / valueRight.DoubleValue;
+                case BinaryOperatorKind.FloatDivision:
+                    return valueLeft.SingleValue / valueRight.SingleValue;
                 case BinaryOperatorKind.DoubleRemainder:
-                case BinaryOperatorKind.FloatRemainder:
                     return valueLeft.DoubleValue % valueRight.DoubleValue;
+                case BinaryOperatorKind.FloatRemainder:
+                    return valueLeft.SingleValue % valueRight.SingleValue;
                 case BinaryOperatorKind.IntLeftShift:
                     return valueLeft.Int32Value << valueRight.Int32Value;
                 case BinaryOperatorKind.LongLeftShift:
@@ -1624,6 +1666,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 case BinaryOperatorKind.DecimalEqual:
                     return valueLeft.DecimalValue == valueRight.DecimalValue;
                 case BinaryOperatorKind.FloatEqual:
+                    return valueLeft.SingleValue == valueRight.SingleValue;
                 case BinaryOperatorKind.DoubleEqual:
                     return valueLeft.DoubleValue == valueRight.DoubleValue;
                 case BinaryOperatorKind.IntEqual:
@@ -1641,6 +1684,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 case BinaryOperatorKind.DecimalNotEqual:
                     return valueLeft.DecimalValue != valueRight.DecimalValue;
                 case BinaryOperatorKind.FloatNotEqual:
+                    return valueLeft.SingleValue != valueRight.SingleValue;
                 case BinaryOperatorKind.DoubleNotEqual:
                     return valueLeft.DoubleValue != valueRight.DoubleValue;
                 case BinaryOperatorKind.IntNotEqual:
@@ -1654,6 +1698,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 case BinaryOperatorKind.DecimalLessThan:
                     return valueLeft.DecimalValue < valueRight.DecimalValue;
                 case BinaryOperatorKind.FloatLessThan:
+                    return valueLeft.SingleValue < valueRight.SingleValue;
                 case BinaryOperatorKind.DoubleLessThan:
                     return valueLeft.DoubleValue < valueRight.DoubleValue;
                 case BinaryOperatorKind.IntLessThan:
@@ -1667,6 +1712,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 case BinaryOperatorKind.DecimalGreaterThan:
                     return valueLeft.DecimalValue > valueRight.DecimalValue;
                 case BinaryOperatorKind.FloatGreaterThan:
+                    return valueLeft.SingleValue > valueRight.SingleValue;
                 case BinaryOperatorKind.DoubleGreaterThan:
                     return valueLeft.DoubleValue > valueRight.DoubleValue;
                 case BinaryOperatorKind.IntGreaterThan:
@@ -1680,6 +1726,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 case BinaryOperatorKind.DecimalLessThanOrEqual:
                     return valueLeft.DecimalValue <= valueRight.DecimalValue;
                 case BinaryOperatorKind.FloatLessThanOrEqual:
+                    return valueLeft.SingleValue <= valueRight.SingleValue;
                 case BinaryOperatorKind.DoubleLessThanOrEqual:
                     return valueLeft.DoubleValue <= valueRight.DoubleValue;
                 case BinaryOperatorKind.IntLessThanOrEqual:
@@ -1693,6 +1740,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 case BinaryOperatorKind.DecimalGreaterThanOrEqual:
                     return valueLeft.DecimalValue >= valueRight.DecimalValue;
                 case BinaryOperatorKind.FloatGreaterThanOrEqual:
+                    return valueLeft.SingleValue >= valueRight.SingleValue;
                 case BinaryOperatorKind.DoubleGreaterThanOrEqual:
                     return valueLeft.DoubleValue >= valueRight.DoubleValue;
                 case BinaryOperatorKind.IntGreaterThanOrEqual:

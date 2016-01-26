@@ -13,7 +13,7 @@ using Xunit;
 
 namespace Microsoft.CodeAnalysis.CSharp.UnitTests
 {
-    public partial class SyntaxBinderTests : CompilingTestBase
+    public partial class LambdaTests : CompilingTestBase
     {
         [Fact, WorkItem(608181, "DevDiv")]
         public void BadInvocationInLambda()
@@ -218,14 +218,14 @@ class C
     }
 }";
             var compilation = CreateCompilationWithMscorlib(code);
-            compilation.VerifyDiagnostics();
+            compilation.VerifyDiagnostics(); // no errors expected
         }
 
         [WorkItem(539538, "DevDiv")]
         [Fact]
         public void TestLambdaErrors03()
         {
-            TestErrors(@"
+            string source = @"
 using System;
 
 interface I : IComparable<IComparable<I>> { }
@@ -239,8 +239,11 @@ class C
         Foo(() => null);
     }
 }
-",
-"'Foo' error CS0121: The call is ambiguous between the following methods or properties: 'C.Foo(Func<IComparable<I>>)' and 'C.Foo(Func<I>)'");
+";
+            CreateCompilationWithMscorlib(source).VerifyDiagnostics(
+                // (12,9): error CS0121: The call is ambiguous between the following methods or properties: 'C.Foo(Func<IComparable<I>>)' and 'C.Foo(Func<I>)'
+                //         Foo(() => null);
+                Diagnostic(ErrorCode.ERR_AmbigCall, "Foo").WithArguments("C.Foo(System.Func<System.IComparable<I>>)", "C.Foo(System.Func<I>)").WithLocation(12, 9));
         }
 
         [WorkItem(539976, "DevDiv")]
@@ -1294,6 +1297,267 @@ class Program
             var symbolInfo = semanticModel.GetSymbolInfo(node);
 
             Assert.Equal("Program a", symbolInfo.Symbol.ToTestDisplayString());
+        }
+
+        [Fact]
+        [WorkItem(3826, "https://github.com/dotnet/roslyn/issues/3826")]
+        public void ExpressionTreeSelfAssignmentShouldError()
+        {
+            var source = @"
+using System;
+using System.Linq.Expressions;
+
+class Program
+{
+    static void Main()
+    {
+        Expression<Func<int, int>> x = y => y = y;
+    }
+}";
+            var compilation = CreateCompilationWithMscorlibAndSystemCore(source);
+            compilation.VerifyDiagnostics(
+                // (9,45): warning CS1717: Assignment made to same variable; did you mean to assign something else?
+                //         Expression<Func<int, int>> x = y => y = y;
+                Diagnostic(ErrorCode.WRN_AssignmentToSelf, "y = y").WithLocation(9, 45),
+                // (9,45): error CS0832: An expression tree may not contain an assignment operator
+                //         Expression<Func<int, int>> x = y => y = y;
+                Diagnostic(ErrorCode.ERR_ExpressionTreeContainsAssignment, "y = y").WithLocation(9, 45));
+        }
+
+        [Fact, WorkItem(5363, "https://github.com/dotnet/roslyn/issues/5363")]
+        public void ReturnInferenceCache_Dynamic_vs_Object_01()
+        {
+            var source =
+@"
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
+public static class Program
+{
+    public static void Main(string[] args)
+    {
+        IEnumerable<dynamic> dynX = null;
+
+        // CS1061 'object' does not contain a definition for 'Text'...
+        // tooltip on 'var' shows IColumn instead of IEnumerable<dynamic>
+        var result = dynX.Select(_ => _.Text);
+    }
+
+    public static IColumn Select<TResult>(this IColumn source, Func<object, TResult> selector)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static IEnumerable<S> Select<T, S>(this IEnumerable<T> source, Func<T, S> selector)
+    {
+        System.Console.WriteLine(""Select<T, S>"");
+        return null;
+    }
+}
+
+public interface IColumn { }
+";
+            var compilation = CreateCompilationWithMscorlib(source, new[] { SystemCoreRef, CSharpRef }, options: TestOptions.ReleaseExe);
+            CompileAndVerify(compilation, expectedOutput: "Select<T, S>");
+        }
+
+        [Fact, WorkItem(5363, "https://github.com/dotnet/roslyn/issues/5363")]
+        public void ReturnInferenceCache_Dynamic_vs_Object_02()
+        {
+            var source =
+@"
+using System;
+using System.Collections;
+using System.Collections.Generic;
+
+public static class Program
+{
+    public static void Main(string[] args)
+    {
+        IEnumerable<dynamic> dynX = null;
+
+        // CS1061 'object' does not contain a definition for 'Text'...
+        // tooltip on 'var' shows IColumn instead of IEnumerable<dynamic>
+        var result = dynX.Select(_ => _.Text);
+    }
+
+    public static IEnumerable<S> Select<T, S>(this IEnumerable<T> source, Func<T, S> selector)
+    {
+        System.Console.WriteLine(""Select<T, S>"");
+        return null;
+    }
+
+    public static IColumn Select<TResult>(this IColumn source, Func<object, TResult> selector)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public interface IColumn { }
+";
+            var compilation = CreateCompilationWithMscorlib(source, new[] { SystemCoreRef, CSharpRef }, options: TestOptions.ReleaseExe);
+            CompileAndVerify(compilation, expectedOutput: "Select<T, S>");
+        }
+
+        [Fact, WorkItem(1867, "https://github.com/dotnet/roslyn/issues/1867")]
+        public void SyntaxAndSemanticErrorInLambda()
+        {
+            var source =
+@"
+using System;
+class C
+{
+    public static void Main(string[] args)
+    {
+        Action a = () => { new X().ToString() };
+        a();
+    }
+}
+";
+            CreateCompilationWithMscorlib(source).VerifyDiagnostics(
+                // (7,47): error CS1002: ; expected
+                //         Action a = () => { new X().ToString() };
+                Diagnostic(ErrorCode.ERR_SemicolonExpected, "}").WithLocation(7, 47),
+                // (7,32): error CS0246: The type or namespace name 'X' could not be found (are you missing a using directive or an assembly reference?)
+                //         Action a = () => { new X().ToString() };
+                Diagnostic(ErrorCode.ERR_SingleTypeNameNotFound, "X").WithArguments("X").WithLocation(7, 32)
+                );
+        }
+
+        [Fact, WorkItem(4527, "https://github.com/dotnet/roslyn/issues/4527")]
+        public void AnonymousMethodExpressionWithoutParameterList()
+        {
+            var source =
+@"
+using System;
+using System.Threading.Tasks;
+
+namespace RoslynAsyncDelegate
+{
+    class Program
+    {
+        static EventHandler MyEvent;
+
+        static void Main(string[] args)
+        {
+           MyEvent += async delegate { await Task.Delay(0); };
+        }
+    }
+}
+
+";
+            var compilation = CreateCompilationWithMscorlib45(source, options: TestOptions.DebugExe);
+
+            var tree = compilation.SyntaxTrees[0];
+            var model = compilation.GetSemanticModel(tree);
+
+            var node1 = tree.GetRoot().DescendantNodes().Where(n => n.IsKind(SyntaxKind.AnonymousMethodExpression)).Single();
+
+            Assert.Equal("async delegate { await Task.Delay(0); }", node1.ToString());
+
+            Assert.Equal("void System.EventHandler.Invoke(System.Object sender, System.EventArgs e)", model.GetTypeInfo(node1).ConvertedType.GetMembers("Invoke").Single().ToTestDisplayString());
+
+            var lambdaParameters = ((MethodSymbol)(model.GetSymbolInfo(node1)).Symbol).Parameters;
+
+            Assert.Equal("System.Object <sender>", lambdaParameters[0].ToTestDisplayString());
+            Assert.Equal("System.EventArgs <e>", lambdaParameters[1].ToTestDisplayString());
+
+            CompileAndVerify(compilation);
+        }
+
+        [Fact]
+        [WorkItem(1867, "https://github.com/dotnet/roslyn/issues/1867")]
+        public void TestLambdaWithError01()
+        {
+            var source =
+@"using System.Linq;
+class C { C() { string.Empty.Select(() => { new Unbound1 }); } }";
+            CreateCompilationWithMscorlibAndSystemCore(source).VerifyDiagnostics(
+    // (2,58): error CS1526: A new expression requires (), [], or {} after type
+    // class C { C() { string.Empty.Select(() => { new Unbound1 }); } }
+    Diagnostic(ErrorCode.ERR_BadNewExpr, "}").WithLocation(2, 58),
+    // (2,58): error CS1002: ; expected
+    // class C { C() { string.Empty.Select(() => { new Unbound1 }); } }
+    Diagnostic(ErrorCode.ERR_SemicolonExpected, "}").WithLocation(2, 58),
+    // (2,49): error CS0246: The type or namespace name 'Unbound1' could not be found (are you missing a using directive or an assembly reference?)
+    // class C { C() { string.Empty.Select(() => { new Unbound1 }); } }
+    Diagnostic(ErrorCode.ERR_SingleTypeNameNotFound, "Unbound1").WithArguments("Unbound1").WithLocation(2, 49)
+                );
+        }
+
+        [Fact]
+        [WorkItem(1867, "https://github.com/dotnet/roslyn/issues/1867")]
+        public void TestLambdaWithError02()
+        {
+            var source =
+@"using System.Linq;
+class C { C() { string.Empty.Select(() => { new Unbound1 ( ) }); } }";
+            CreateCompilationWithMscorlibAndSystemCore(source).VerifyDiagnostics(
+    // (2,62): error CS1002: ; expected
+    // class C { C() { string.Empty.Select(() => { new Unbound1 ( ) }); } }
+    Diagnostic(ErrorCode.ERR_SemicolonExpected, "}").WithLocation(2, 62),
+    // (2,49): error CS0246: The type or namespace name 'Unbound1' could not be found (are you missing a using directive or an assembly reference?)
+    // class C { C() { string.Empty.Select(() => { new Unbound1 ( ) }); } }
+    Diagnostic(ErrorCode.ERR_SingleTypeNameNotFound, "Unbound1").WithArguments("Unbound1").WithLocation(2, 49)
+                );
+        }
+
+        [Fact]
+        [WorkItem(1867, "https://github.com/dotnet/roslyn/issues/1867")]
+        public void TestLambdaWithError03()
+        {
+            var source =
+@"using System.Linq;
+class C { C() { string.Empty.Select(x => Unbound1, Unbound2 Unbound2); } }";
+            CreateCompilationWithMscorlibAndSystemCore(source).VerifyDiagnostics(
+    // (2,61): error CS1003: Syntax error, ',' expected
+    // class C { C() { string.Empty.Select(x => Unbound1, Unbound2 Unbound2); } }
+    Diagnostic(ErrorCode.ERR_SyntaxError, "Unbound2").WithArguments(",", "").WithLocation(2, 61),
+    // (2,52): error CS0103: The name 'Unbound2' does not exist in the current context
+    // class C { C() { string.Empty.Select(x => Unbound1, Unbound2 Unbound2); } }
+    Diagnostic(ErrorCode.ERR_NameNotInContext, "Unbound2").WithArguments("Unbound2").WithLocation(2, 52),
+    // (2,61): error CS0103: The name 'Unbound2' does not exist in the current context
+    // class C { C() { string.Empty.Select(x => Unbound1, Unbound2 Unbound2); } }
+    Diagnostic(ErrorCode.ERR_NameNotInContext, "Unbound2").WithArguments("Unbound2").WithLocation(2, 61),
+    // (2,42): error CS0103: The name 'Unbound1' does not exist in the current context
+    // class C { C() { string.Empty.Select(x => Unbound1, Unbound2 Unbound2); } }
+    Diagnostic(ErrorCode.ERR_NameNotInContext, "Unbound1").WithArguments("Unbound1").WithLocation(2, 42)
+                );
+        }
+
+        [Fact]
+        [WorkItem(1867, "https://github.com/dotnet/roslyn/issues/1867")]
+        public void TestLambdaWithError04()
+        {
+            var source =
+@"using System.Linq;
+class C { C() { string.Empty.Select(x => Unbound1, Unbound2); } }";
+            CreateCompilationWithMscorlibAndSystemCore(source).VerifyDiagnostics(
+    // (2,52): error CS0103: The name 'Unbound2' does not exist in the current context
+    // class C { C() { string.Empty.Select(x => Unbound1, Unbound2); } }
+    Diagnostic(ErrorCode.ERR_NameNotInContext, "Unbound2").WithArguments("Unbound2").WithLocation(2, 52),
+    // (2,42): error CS0103: The name 'Unbound1' does not exist in the current context
+    // class C { C() { string.Empty.Select(x => Unbound1, Unbound2); } }
+    Diagnostic(ErrorCode.ERR_NameNotInContext, "Unbound1").WithArguments("Unbound1").WithLocation(2, 42)
+                );
+        }
+
+        [Fact]
+        [WorkItem(1867, "https://github.com/dotnet/roslyn/issues/1867")]
+        public void TestLambdaWithError05()
+        {
+            var source =
+@"using System.Linq;
+class C { C() { Unbound2.Select(x => Unbound1); } }";
+            CreateCompilationWithMscorlibAndSystemCore(source).VerifyDiagnostics(
+    // (2,17): error CS0103: The name 'Unbound2' does not exist in the current context
+    // class C { C() { Unbound2.Select(x => Unbound1); } }
+    Diagnostic(ErrorCode.ERR_NameNotInContext, "Unbound2").WithArguments("Unbound2").WithLocation(2, 17),
+    // (2,38): error CS0103: The name 'Unbound1' does not exist in the current context
+    // class C { C() { Unbound2.Select(x => Unbound1); } }
+    Diagnostic(ErrorCode.ERR_NameNotInContext, "Unbound1").WithArguments("Unbound1").WithLocation(2, 38)
+                );
         }
     }
 }

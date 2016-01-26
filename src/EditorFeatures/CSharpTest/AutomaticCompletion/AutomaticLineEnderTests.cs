@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
 using System;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.Editor.Commands;
 using Microsoft.CodeAnalysis.Editor.CSharp.AutomaticCompletion;
 using Microsoft.CodeAnalysis.Editor.Host;
@@ -17,51 +18,50 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.UnitTests.AutomaticCompletion
 {
     public class AutomaticLineEnderTests : AbstractAutomaticLineEnderTests
     {
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void Creation()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task Creation()
         {
-            Test(@"
+            await TestAsync(@"
 $$", "$$");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void Usings()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task Usings()
         {
-            Test(@"using System;
+            await TestAsync(@"using System;
 $$", @"using System$$");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void Namespace()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task Namespace()
         {
-            Test(@"namespace {}
+            await TestAsync(@"namespace {}
 $$", @"namespace {$$}");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void Class()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task Class()
         {
-            Test(@"class {}
+            await TestAsync(@"class {}
 $$", "class {$$}");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void Method()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task Method()
         {
-            Test(@"class C
+            await TestAsync(@"class C
 {
-    void Method() { }
-    $$
+    void Method() {$$}
 }", @"class C
 {
     void Method() {$$}
-}");
+}", assertNextHandlerInvoked: true);
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void Field()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task Field()
         {
-            Test(@"class C
+            await TestAsync(@"class C
 {
     private readonly int i = 3;
     $$
@@ -71,10 +71,10 @@ $$", "class {$$}");
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void EventField()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task EventField()
         {
-            Test(@"class C
+            await TestAsync(@"class C
 {
     event System.EventHandler e = null;
     $$
@@ -84,10 +84,10 @@ $$", "class {$$}");
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void Field2()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task Field2()
         {
-            Test(@"class C
+            await TestAsync(@"class C
 {
     private readonly int i;
     $$
@@ -97,10 +97,10 @@ $$", "class {$$}");
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void EventField2()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task EventField2()
         {
-            Test(@"class C
+            await TestAsync(@"class C
 {
     event System.EventHandler e;
     $$
@@ -110,10 +110,10 @@ $$", "class {$$}");
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void Field3()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task Field3()
         {
-            Test(@"class C
+            await TestAsync(@"class C
 {
     private readonly int
         $$
@@ -123,10 +123,10 @@ $$", "class {$$}");
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void EventField3()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task EventField3()
         {
-            Test(@"class C
+            await TestAsync(@"class C
 {
     event System.EventHandler
         $$
@@ -136,10 +136,10 @@ $$", "class {$$}");
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void EmbededStatement()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task EmbededStatement()
         {
-            Test(@"class C
+            await TestAsync(@"class C
 {
     void Method()
     {
@@ -155,10 +155,10 @@ $$", "class {$$}");
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void EmbededStatement1()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task EmbededStatement1()
         {
-            Test(@"class C
+            await TestAsync(@"class C
 {
     void Method()
     {
@@ -176,10 +176,10 @@ $$", "class {$$}");
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void EmbededStatement2()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task EmbededStatement2()
         {
-            Test(@"class C
+            await TestAsync(@"class C
 {
     void Method()
     {
@@ -197,10 +197,10 @@ $$", "class {$$}");
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void Statement()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task Statement()
         {
-            Test(@"class C
+            await TestAsync(@"class C
 {
     void Method()
     {
@@ -216,10 +216,10 @@ $$", "class {$$}");
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void Statement1()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task Statement1()
         {
-            Test(@"class C
+            await TestAsync(@"class C
 {
     void Method()
     {
@@ -236,10 +236,10 @@ $$", "class {$$}");
         }
 
         [WorkItem(3944, "https://github.com/dotnet/roslyn/issues/3944")]
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void ExpressionBodiedMethod()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task ExpressionBodiedMethod()
         {
-            Test(@"class T
+            await TestAsync(@"class T
 {
     int M() => 1 + 2;
     $$
@@ -250,10 +250,10 @@ $$", "class {$$}");
         }
 
         [WorkItem(3944, "https://github.com/dotnet/roslyn/issues/3944")]
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void ExpressionBodiedOperator()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task ExpressionBodiedOperator()
         {
-            Test(@"class Complex
+            await TestAsync(@"class Complex
 {
     int real; int imaginary;
     public static Complex operator +(Complex a, Complex b) => a.Add(b.real + 1);
@@ -268,10 +268,10 @@ $$", "class {$$}");
         }
 
         [WorkItem(3944, "https://github.com/dotnet/roslyn/issues/3944")]
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void ExpressionBodiedConversionOperator()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task ExpressionBodiedConversionOperator()
         {
-            Test(@"using System;
+            await TestAsync(@"using System;
 public struct DBBool
 {
     public static readonly DBBool dbFalse = new DBBool(-1);
@@ -300,10 +300,10 @@ public struct DBBool
         }
 
         [WorkItem(3944, "https://github.com/dotnet/roslyn/issues/3944")]
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void ExpressionBodiedProperty()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task ExpressionBodiedProperty()
         {
-            Test(@"class T
+            await TestAsync(@"class T
 {
     int P1 => 1 + 2;
     $$
@@ -314,10 +314,10 @@ public struct DBBool
         }
 
         [WorkItem(3944, "https://github.com/dotnet/roslyn/issues/3944")]
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void ExpressionBodiedIndexer()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task ExpressionBodiedIndexer()
         {
-            Test(@"using System;
+            await TestAsync(@"using System;
 class SampleCollection<T>
 {
     private T[] arr = new T[100];
@@ -332,10 +332,10 @@ class SampleCollection<T>
         }
 
         [WorkItem(3944, "https://github.com/dotnet/roslyn/issues/3944")]
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void ExpressionBodiedMethodWithBlockBodiedAnonymousMethodExpression()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task ExpressionBodiedMethodWithBlockBodiedAnonymousMethodExpression()
         {
-            Test(@"using System;
+            await TestAsync(@"using System;
 class TestClass
 {
     Func<int, int> Y() => delegate (int x)
@@ -354,10 +354,10 @@ class TestClass
         }
 
         [WorkItem(3944, "https://github.com/dotnet/roslyn/issues/3944")]
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void ExpressionBodiedMethodWithSingleLineBlockBodiedAnonymousMethodExpression()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task ExpressionBodiedMethodWithSingleLineBlockBodiedAnonymousMethodExpression()
         {
-            Test(@"using System;
+            await TestAsync(@"using System;
 class TestClass
 {
     Func<int, int> Y() => delegate (int x) { return 9; };
@@ -370,10 +370,10 @@ class TestClass
         }
 
         [WorkItem(3944, "https://github.com/dotnet/roslyn/issues/3944")]
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void ExpressionBodiedMethodWithBlockBodiedSimpleLambdaExpression()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task ExpressionBodiedMethodWithBlockBodiedSimpleLambdaExpression()
         {
-            Test(@"using System;
+            await TestAsync(@"using System;
 class TestClass
 {
     Func<int, int> Y() => f =>
@@ -392,10 +392,10 @@ class TestClass
         }
 
         [WorkItem(3944, "https://github.com/dotnet/roslyn/issues/3944")]
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void ExpressionBodiedMethodWithExpressionBodiedSimpleLambdaExpression()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task ExpressionBodiedMethodWithExpressionBodiedSimpleLambdaExpression()
         {
-            Test(@"using System;
+            await TestAsync(@"using System;
 class TestClass
 {
     Func<int, int> Y() => f => f * 9;
@@ -408,10 +408,10 @@ class TestClass
         }
 
         [WorkItem(3944, "https://github.com/dotnet/roslyn/issues/3944")]
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void ExpressionBodiedMethodWithBlockBodiedAnonymousMethodExpressionInMethodArgs()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task ExpressionBodiedMethodWithBlockBodiedAnonymousMethodExpressionInMethodArgs()
         {
-            Test(@"using System;
+            await TestAsync(@"using System;
 class TestClass
 {
     public int Prop => Method1(delegate ()
@@ -434,10 +434,10 @@ class TestClass
         }
 
         [WorkItem(3944, "https://github.com/dotnet/roslyn/issues/3944")]
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void Format_SimpleExpressionBodiedMember()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task Format_SimpleExpressionBodiedMember()
         {
-            Test(@"class T
+            await TestAsync(@"class T
 {
     int M() => 1 + 2;
     $$
@@ -448,10 +448,10 @@ class TestClass
         }
 
         [WorkItem(3944, "https://github.com/dotnet/roslyn/issues/3944")]
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void Format_ExpressionBodiedMemberWithSingleLineBlock()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task Format_ExpressionBodiedMemberWithSingleLineBlock()
         {
-            Test(@"using System;
+            await TestAsync(@"using System;
 class TestClass
 {
     Func<int, int> Y() => delegate (int x) { return 9; };
@@ -464,10 +464,10 @@ class TestClass
         }
 
         [WorkItem(3944, "https://github.com/dotnet/roslyn/issues/3944")]
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void Format_ExpressionBodiedMemberWithMultiLineBlock()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task Format_ExpressionBodiedMemberWithMultiLineBlock()
         {
-            Test(@"using System;
+            await TestAsync(@"using System;
 class TestClass
 {
     Func<int, int> Y() => delegate (int x)
@@ -485,10 +485,10 @@ class TestClass
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void Format_Statement()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task Format_Statement()
         {
-            Test(@"class C
+            await TestAsync(@"class C
 {
     void Method()
     {
@@ -504,26 +504,26 @@ class TestClass
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void Format_Using()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task Format_Using()
         {
-            Test(@"using System.Linq;
+            await TestAsync(@"using System.Linq;
 $$", @"         using           System          .                   Linq            $$");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void Format_Using2()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task Format_Using2()
         {
-            Test(@"using
+            await TestAsync(@"using
     System.Linq;
 $$", @"         using           
              System          .                   Linq            $$");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void Format_Field()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task Format_Field()
         {
-            Test(@"class C
+            await TestAsync(@"class C
 {
     int i = 1;
     $$
@@ -533,10 +533,10 @@ $$", @"         using
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void Statement_Trivia()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task Statement_Trivia()
         {
-            Test(@"class C
+            await TestAsync(@"class C
 {
     void foo()
     {
@@ -552,10 +552,10 @@ $$", @"         using
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void TrailingText_Negative()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task TrailingText_Negative()
         {
-            Test(@"class C
+            await TestAsync(@"class C
 {
     event System.EventHandler e = null  int i = 2;  
     $$
@@ -565,10 +565,10 @@ $$", @"         using
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void CompletionSetUp()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task CompletionSetUp()
         {
-            Test(@"class Program
+            await TestAsync(@"class Program
 {
     object foo(object o)
     {
@@ -585,10 +585,10 @@ $$", @"         using
         }
 
         [WorkItem(530352)]
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void EmbededStatement3()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task EmbededStatement3()
         {
-            Test(@"class Program
+            await TestAsync(@"class Program
 {
     void Method()
     {
@@ -605,10 +605,10 @@ $$", @"         using
         }
 
         [WorkItem(530716)]
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void DontAssertOnMultilineToken()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task DontAssertOnMultilineToken()
         {
-            Test(@"interface I
+            await TestAsync(@"interface I
 {
     void M(string s = @""""""
 $$
@@ -619,10 +619,10 @@ $$
         }
 
         [WorkItem(530718)]
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void AutomaticLineFormat()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task AutomaticLineFormat()
         {
-            Test(@"class C
+            await TestAsync(@"class C
 {
     public string P { set; get; }
     $$
@@ -632,10 +632,10 @@ $$
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void NotAfterExisitingSemicolon()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task NotAfterExisitingSemicolon()
         {
-            Test(@"class TestClass
+            await TestAsync(@"class TestClass
 {
     private int i;
     $$
@@ -645,10 +645,10 @@ $$
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void NotAfterCloseBraceInMethod()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task NotAfterCloseBraceInMethod()
         {
-            Test(@"class TestClass
+            await TestAsync(@"class TestClass
 {
     void Test() { }
     $$
@@ -658,10 +658,10 @@ $$
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void NotAfterCloseBraceInStatement()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task NotAfterCloseBraceInStatement()
         {
-            Test(@"class TestClass
+            await TestAsync(@"class TestClass
 {
     void Test()
     {
@@ -677,10 +677,10 @@ $$
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void NotAfterAutoPropertyAccessor()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task NotAfterAutoPropertyAccessor()
         {
-            Test(@"class TestClass
+            await TestAsync(@"class TestClass
 {
     public int A { get; set }
     $$
@@ -690,10 +690,10 @@ $$
 }");
         }
 
-        [Fact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
-        public void NotAfterAutoPropertyDeclaration()
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task NotAfterAutoPropertyDeclaration()
         {
-            Test(@"class TestClass
+            await TestAsync(@"class TestClass
 {
     public int A { get; set; }
     $$
@@ -703,9 +703,147 @@ $$
 }");
         }
 
-        protected override TestWorkspace CreateWorkspace(string[] code)
+        [WorkItem(150480)]
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task DelegatedInEmptyBlock()
         {
-            return CSharpWorkspaceFactory.CreateWorkspaceFromLines(code);
+            await TestAsync(@"class TestClass
+{
+    void Method()
+    {
+        try { $$}
+    }
+}", @"class TestClass
+{
+    void Method()
+    {
+        try { $$}
+    }
+}", assertNextHandlerInvoked: true);
+        }
+
+        [WorkItem(150480)]
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task DelegatedInEmptyBlock2()
+        {
+            await TestAsync(@"class TestClass
+{
+    void Method()
+    {
+        if (true) { $$}
+    }
+}", @"class TestClass
+{
+    void Method()
+    {
+        if (true) { $$}
+    }
+}", assertNextHandlerInvoked: true);
+        }
+
+        [WorkItem(150480)]
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task NotDelegatedOutsideEmptyBlock()
+        {
+            await TestAsync(@"class TestClass
+{
+    void Method()
+    {
+        try { }
+        $$
+    }
+}", @"class TestClass
+{
+    void Method()
+    {
+        try { }$$
+    }
+}");
+        }
+
+        [WorkItem(150480)]
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task NotDelegatedAfterOpenBraceAndMissingCloseBrace()
+        {
+            await TestAsync(@"class TestClass
+{
+    void Method()
+    {
+        try {
+            $$
+    }
+}", @"class TestClass
+{
+    void Method()
+    {
+        try {$$
+    }
+}");
+        }
+
+        [WorkItem(150480)]
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task NotDelegatedInNonEmptyBlock()
+        {
+            await TestAsync(@"class TestClass
+{
+    void Method()
+    {
+        try { x }
+        $$
+    }
+}", @"class TestClass
+{
+    void Method()
+    {
+        try { x$$ }
+    }
+}");
+        }
+
+        [WorkItem(150480)]
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task NotDelegatedAfterOpenBraceInAnonymousObjectCreationExpression()
+        {
+            await TestAsync(@"class TestClass
+{
+    void Method()
+    {
+        var pet = new { };
+        $$
+    }
+}", @"class TestClass
+{
+    void Method()
+    {
+        var pet = new { $$}
+    }
+}");
+        }
+
+        [WorkItem(150480)]
+        [WpfFact, Trait(Traits.Feature, Traits.Features.AutomaticCompletion)]
+        public async Task NotDelegatedAfterOpenBraceObjectCreationExpression()
+        {
+            await TestAsync(@"class TestClass
+{
+    void Method()
+    {
+        var pet = new List<int> { };
+        $$
+    }
+}", @"class TestClass
+{
+    void Method()
+    {
+        var pet = new List<int> { $$}
+    }
+}");
+        }
+
+        protected override Task<TestWorkspace> CreateWorkspaceAsync(string code)
+        {
+            return TestWorkspace.CreateCSharpAsync(code);
         }
 
         protected override Action CreateNextHandler(TestWorkspace workspace)

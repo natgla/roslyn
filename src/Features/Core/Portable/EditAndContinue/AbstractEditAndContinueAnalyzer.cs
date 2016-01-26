@@ -233,7 +233,7 @@ namespace Microsoft.CodeAnalysis.EditAndContinue
         protected abstract TextSpan GetExceptionHandlingRegion(SyntaxNode node, out bool coversAllChildren);
 
         internal abstract void ReportSyntacticRudeEdits(List<RudeEditDiagnostic> diagnostics, Match<SyntaxNode> match, Edit<SyntaxNode> edit, Dictionary<SyntaxNode, EditKind> editMap);
-        internal abstract void ReportEnclosingExceptionHandlingRudeEdits(List<RudeEditDiagnostic> diagnostics, IEnumerable<Edit<SyntaxNode>> exceptionHandlingEdits, SyntaxNode oldStatement, SyntaxNode newStatement);
+        internal abstract void ReportEnclosingExceptionHandlingRudeEdits(List<RudeEditDiagnostic> diagnostics, IEnumerable<Edit<SyntaxNode>> exceptionHandlingEdits, SyntaxNode oldStatement, TextSpan newStatementSpan);
         internal abstract void ReportOtherRudeEditsAroundActiveStatement(List<RudeEditDiagnostic> diagnostics, Match<SyntaxNode> match, SyntaxNode oldStatement, SyntaxNode newStatement, bool isLeaf);
         internal abstract void ReportMemberUpdateRudeEdits(List<RudeEditDiagnostic> diagnostics, SyntaxNode newMember, TextSpan? span);
         internal abstract void ReportInsertedMemberSymbolRudeEdits(List<RudeEditDiagnostic> diagnostics, ISymbol newSymbol);
@@ -554,16 +554,17 @@ namespace Microsoft.CodeAnalysis.EditAndContinue
             Debug.Assert(updatedMethods.Count == 0);
 
             var updatedTrackingSpans = new List<KeyValuePair<ActiveStatementId, TextSpan>>();
+            BitVector editedActiveStatements = BitVector.Create(newActiveStatements.Length);
 
             for (int i = 0; i < script.Edits.Length; i++)
             {
                 var edit = script.Edits[i];
 
-                AnalyzeUpdatedActiveMethodBodies(script, i, editMap, oldText, newText, documentId, trackingService, oldActiveStatements, newActiveStatements, newExceptionRegions, updatedMethods, updatedTrackingSpans, diagnostics);
+                AnalyzeUpdatedActiveMethodBodies(script, i, editMap, oldText, newText, documentId, trackingService, oldActiveStatements, ref editedActiveStatements, newActiveStatements, newExceptionRegions, updatedMethods, updatedTrackingSpans, diagnostics);
                 ReportSyntacticRudeEdits(diagnostics, script.Match, edit, editMap);
             }
 
-            UpdateUneditedSpans(diagnostics, script.Match, oldText, newText, documentId, trackingService, oldActiveStatements, newActiveStatements, newExceptionRegions, updatedTrackingSpans);
+            UpdateUneditedSpans(diagnostics, script.Match, oldText, newText, documentId, trackingService, oldActiveStatements, editedActiveStatements, newActiveStatements, newExceptionRegions, updatedTrackingSpans);
 
             if (updatedTrackingSpans.Count > 0)
             {
@@ -579,6 +580,7 @@ namespace Microsoft.CodeAnalysis.EditAndContinue
             DocumentId documentId,
             IActiveStatementTrackingService trackingService,
             ImmutableArray<ActiveStatementSpan> oldActiveStatements,
+            BitVector editedActiveStatements,
             [In, Out]LinePositionSpan[] newActiveStatements,
             [In, Out]ImmutableArray<LinePositionSpan>[] newExceptionRegions,
             [In, Out]List<KeyValuePair<ActiveStatementId, TextSpan>> updatedTrackingSpans)
@@ -591,7 +593,7 @@ namespace Microsoft.CodeAnalysis.EditAndContinue
 
             for (int i = 0; i < newActiveStatements.Length; i++)
             {
-                if (newActiveStatements[i] == default(LinePositionSpan))
+                if (!editedActiveStatements[i])
                 {
                     Debug.Assert(newExceptionRegions[i].IsDefault);
 
@@ -840,6 +842,7 @@ namespace Microsoft.CodeAnalysis.EditAndContinue
             DocumentId documentId,
             IActiveStatementTrackingService trackingService,
             ImmutableArray<ActiveStatementSpan> oldActiveStatements,
+            ref BitVector editedActiveStatements,
             [Out]LinePositionSpan[] newActiveStatements,
             [Out]ImmutableArray<LinePositionSpan>[] newExceptionRegions,
             [Out]List<UpdatedMemberInfo> updatedMembers,
@@ -886,8 +889,8 @@ namespace Microsoft.CodeAnalysis.EditAndContinue
                         // TODO: VB field multi-initializers break this
                         // Debug.Assert(newActiveStatements[i] == default(LinePositionSpan));
 
-                        Debug.Assert(newSpan != default(TextSpan));
                         newActiveStatements[i] = newText.Lines.GetLinePositionSpan(newSpan);
+                        editedActiveStatements[i] = true;
                         newExceptionRegions[i] = ImmutableArray.Create<LinePositionSpan>();
                     }
                 }
@@ -906,6 +909,7 @@ namespace Microsoft.CodeAnalysis.EditAndContinue
                     {
                         Debug.Assert(newActiveStatements[i] == default(LinePositionSpan) && newSpan != default(TextSpan));
                         newActiveStatements[i] = newText.Lines.GetLinePositionSpan(newSpan);
+                        editedActiveStatements[i] = true;
                         newExceptionRegions[i] = ImmutableArray.Create<LinePositionSpan>();
                     }
                 }
@@ -999,15 +1003,15 @@ namespace Microsoft.CodeAnalysis.EditAndContinue
                 newExceptionRegions[ordinal] = ImmutableArray.Create<LinePositionSpan>();
 
                 TextSpan newSpan;
-                SyntaxNode newStatementSyntax;
+                SyntaxNode newStatementSyntaxOpt;
                 Match<SyntaxNode> match;
 
                 if (oldEnclosingLambdaBody == null)
                 {
                     match = bodyMatch;
 
-                    hasMatching = TryMatchActiveStatement(oldStatementSyntax, statementPart, oldBody, newBody, out newStatementSyntax) ||
-                                  match.TryGetNewNode(oldStatementSyntax, out newStatementSyntax);
+                    hasMatching = TryMatchActiveStatement(oldStatementSyntax, statementPart, oldBody, newBody, out newStatementSyntaxOpt) ||
+                                  match.TryGetNewNode(oldStatementSyntax, out newStatementSyntaxOpt);
                 }
                 else
                 {
@@ -1017,52 +1021,34 @@ namespace Microsoft.CodeAnalysis.EditAndContinue
 
                     if (match != null)
                     {
-                        hasMatching = TryMatchActiveStatement(oldStatementSyntax, statementPart, oldEnclosingLambdaBody, newEnclosingLambdaBody, out newStatementSyntax) ||
-                                      match.TryGetNewNode(oldStatementSyntax, out newStatementSyntax);
+                        hasMatching = TryMatchActiveStatement(oldStatementSyntax, statementPart, oldEnclosingLambdaBody, newEnclosingLambdaBody, out newStatementSyntaxOpt) ||
+                                      match.TryGetNewNode(oldStatementSyntax, out newStatementSyntaxOpt);
                     }
                     else
                     {
                         // Lambda match is null if lambdas can't be matched, 
                         // in such case we won't have active statement matched either.
                         hasMatching = false;
-                        newStatementSyntax = null;
+                        newStatementSyntaxOpt = null;
                     }
                 }
 
                 if (hasMatching)
                 {
-                    Debug.Assert(newStatementSyntax != null);
+                    Debug.Assert(newStatementSyntaxOpt != null);
 
                     // The matching node doesn't produce sequence points.
                     // E.g. "const" keyword is inserted into a local variable declaration with an initializer.
-                    newSpan = FindClosestActiveSpan(newStatementSyntax, statementPart);
+                    newSpan = FindClosestActiveSpan(newStatementSyntaxOpt, statementPart);
 
-                    if ((!isLeaf || isPartiallyExecuted) && !AreEquivalentActiveStatements(oldStatementSyntax, newStatementSyntax, statementPart))
+                    if ((!isLeaf || isPartiallyExecuted) && !AreEquivalentActiveStatements(oldStatementSyntax, newStatementSyntaxOpt, statementPart))
                     {
                         // rude edit: internal active statement changed
                         diagnostics.Add(new RudeEditDiagnostic(isLeaf ? RudeEditKind.PartiallyExecutedActiveStatementUpdate : RudeEditKind.ActiveStatementUpdate, newSpan));
                     }
 
-                    // exception handling around the statement:
-
-                    var oldAncestors = GetExceptionHandlingAncestors(oldStatementSyntax, isLeaf);
-                    var newAncestors = GetExceptionHandlingAncestors(newStatementSyntax, isLeaf);
-
-                    if (oldAncestors.Count > 0 || newAncestors.Count > 0)
-                    {
-                        var edits = match.GetSequenceEdits(oldAncestors, newAncestors);
-                        ReportEnclosingExceptionHandlingRudeEdits(diagnostics, edits, oldStatementSyntax, newStatementSyntax);
-
-                        // Exception regions are not needed in presence of errors.
-                        if (diagnostics.Count == 0)
-                        {
-                            Debug.Assert(oldAncestors.Count == newAncestors.Count);
-                            newExceptionRegions[ordinal] = GetExceptionRegions(newAncestors, newText);
-                        }
-                    }
-
                     // other statements around active statement:
-                    ReportOtherRudeEditsAroundActiveStatement(diagnostics, match, oldStatementSyntax, newStatementSyntax, isLeaf);
+                    ReportOtherRudeEditsAroundActiveStatement(diagnostics, match, oldStatementSyntax, newStatementSyntaxOpt, isLeaf);
                 }
                 else if (match == null)
                 {
@@ -1088,14 +1074,65 @@ namespace Microsoft.CodeAnalysis.EditAndContinue
                     }
                 }
 
+                // exception handling around the statement:
+                CalculateExceptionRegionsAroundActiveStatement(
+                    bodyMatch,
+                    oldStatementSyntax,
+                    newStatementSyntaxOpt,
+                    newSpan,
+                    ordinal,
+                    newText,
+                    isLeaf,
+                    newExceptionRegions,
+                    diagnostics);
+
                 Debug.Assert(newActiveStatements[ordinal] == default(LinePositionSpan) && newSpan != default(TextSpan));
                 newActiveStatements[ordinal] = newText.Lines.GetLinePositionSpan(newSpan);
+                editedActiveStatements[ordinal] = true;
 
                 // Update tracking span if we found a matching active statement whose span is different.
                 // It could have been deleted or moved out of the method/lambda body, in which case we set it to empty.
                 if (activeNodes[i].TrackedSpanOpt.HasValue && activeNodes[i].TrackedSpanOpt.Value != newSpan)
                 {
                     updatedTrackingSpans.Add(KeyValuePair.Create(new ActiveStatementId(documentId, ordinal), newSpan));
+                }
+            }
+        }
+
+        private void CalculateExceptionRegionsAroundActiveStatement(
+            Match<SyntaxNode> bodyMatch,
+            SyntaxNode oldStatementSyntax,
+            SyntaxNode newStatementSyntaxOpt,
+            TextSpan newStatementSyntaxSpan,
+            int ordinal,
+            SourceText newText,
+            bool isLeaf,
+            ImmutableArray<LinePositionSpan>[] newExceptionRegions,
+            List<RudeEditDiagnostic> diagnostics)
+        {
+            if (newStatementSyntaxOpt == null && bodyMatch.NewRoot.Span.Contains(newStatementSyntaxSpan.Start))
+            {
+                newStatementSyntaxOpt = bodyMatch.NewRoot.FindToken(newStatementSyntaxSpan.Start).Parent;
+            }
+
+            if (newStatementSyntaxOpt == null)
+            {
+                return;
+            }
+
+            var oldAncestors = GetExceptionHandlingAncestors(oldStatementSyntax, isLeaf);
+            var newAncestors = GetExceptionHandlingAncestors(newStatementSyntaxOpt, isLeaf);
+
+            if (oldAncestors.Count > 0 || newAncestors.Count > 0)
+            {
+                var edits = bodyMatch.GetSequenceEdits(oldAncestors, newAncestors);
+                ReportEnclosingExceptionHandlingRudeEdits(diagnostics, edits, oldStatementSyntax, newStatementSyntaxSpan);
+
+                // Exception regions are not needed in presence of errors.
+                if (diagnostics.Count == 0)
+                {
+                    Debug.Assert(oldAncestors.Count == newAncestors.Count);
+                    newExceptionRegions[ordinal] = GetExceptionRegions(newAncestors, newText);
                 }
             }
         }
@@ -1316,8 +1353,8 @@ namespace Microsoft.CodeAnalysis.EditAndContinue
                 // It is allow to update a regular method to an async method or an iterator.
                 // The only restriction is a presence of an active statement in the method body
                 // since the debugger does not support remapping active statements to a different method.
-                if (oldStateMachineKind == StateMachineKind.None && newStateMachineKind != StateMachineKind.None )
-                {                    
+                if (oldStateMachineKind == StateMachineKind.None && newStateMachineKind != StateMachineKind.None)
+                {
                     diagnostics.Add(new RudeEditDiagnostic(
                         RudeEditKind.UpdatingStateMachineMethodAroundActiveStatement,
                         GetDiagnosticSpan(IsMethod(newBody) ? newBody : newBody.Parent, EditKind.Update)));
@@ -1601,7 +1638,7 @@ namespace Microsoft.CodeAnalysis.EditAndContinue
 
         #region Rude Edits around Active Statement 
 
-        protected void AddRudeDiagnostic(List<RudeEditDiagnostic> diagnostics, SyntaxNode oldNode, SyntaxNode newNode, SyntaxNode newActiveStatement)
+        protected void AddRudeDiagnostic(List<RudeEditDiagnostic> diagnostics, SyntaxNode oldNode, SyntaxNode newNode, TextSpan newActiveStatementSpan)
         {
             if (oldNode == null)
             {
@@ -1609,7 +1646,7 @@ namespace Microsoft.CodeAnalysis.EditAndContinue
             }
             else if (newNode == null)
             {
-                AddRudeDeleteAroundActiveStatement(diagnostics, oldNode, newActiveStatement);
+                AddRudeDeleteAroundActiveStatement(diagnostics, oldNode, newActiveStatementSpan);
             }
             else
             {
@@ -1635,11 +1672,11 @@ namespace Microsoft.CodeAnalysis.EditAndContinue
                 new[] { GetStatementDisplayName(newNode, EditKind.Insert) }));
         }
 
-        protected void AddRudeDeleteAroundActiveStatement(List<RudeEditDiagnostic> diagnostics, SyntaxNode oldNode, SyntaxNode newActiveStatement)
+        protected void AddRudeDeleteAroundActiveStatement(List<RudeEditDiagnostic> diagnostics, SyntaxNode oldNode, TextSpan newActiveStatementSpan)
         {
             diagnostics.Add(new RudeEditDiagnostic(
                 RudeEditKind.DeleteAroundActiveStatement,
-                newActiveStatement.Span,
+                newActiveStatementSpan,
                 oldNode,
                 new[] { GetStatementDisplayName(oldNode, EditKind.Delete) }));
         }
@@ -2657,10 +2694,10 @@ namespace Microsoft.CodeAnalysis.EditAndContinue
                 {
                     // rude edit: Editing a field/property initializer of a partial type.
                     diagnostics.Add(new RudeEditDiagnostic(
-                                        RudeEditKind.PartialTypeInitializerUpdate, 
+                                        RudeEditKind.PartialTypeInitializerUpdate,
                                         newDeclaration.Span,
                                         newDeclaration,
-                                        new[] { GetTopLevelDisplayName(newDeclaration, EditKind.Update)}));
+                                        new[] { GetTopLevelDisplayName(newDeclaration, EditKind.Update) }));
                     return false;
                 }
 
@@ -2742,7 +2779,7 @@ namespace Microsoft.CodeAnalysis.EditAndContinue
                         Debug.Assert(newDeclaration.SyntaxTree == topMatch.NewRoot.SyntaxTree);
 
                         // Constructor that doesn't contain initializers had a corresponding semantic edit produced previously 
-                        // or was not not edited. In either case we should not produce a semantic edit for it.
+                        // or was not edited. In either case we should not produce a semantic edit for it.
                         if (!IsConstructorWithMemberInitializers(newDeclaration))
                         {
                             continue;
@@ -3034,7 +3071,7 @@ namespace Microsoft.CodeAnalysis.EditAndContinue
             }
 
             // Report rude edits for lambdas added to the method.
-            // We already checked that no new captures are introduced opr removed. 
+            // We already checked that no new captures are introduced or removed. 
             // We also need to make sure that no new parent frame links are introduced.
             // 
             // We could implement the same analysis as the compiler does when rewriting lambdas - 

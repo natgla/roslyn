@@ -71,7 +71,7 @@ namespace Roslyn.VisualStudio.CSharp.UnitTests.ProjectSystemShim
             }
         }
 
-        ////[Fact]
+        ////[WpfFact]
         ////[Trait(Traits.Feature, Traits.Features.ProjectSystemShims)]
         ////public void UseOPTID_COMPATIBILITY_caseinsensitive()
         ////{
