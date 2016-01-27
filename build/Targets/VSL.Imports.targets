@@ -276,7 +276,6 @@
 
     <Message Text="Adding optimization data to @(IntermediateAssembly)"/>
     <Exec Command="&quot;$(IbcMergePath)&quot; -q -f -partialNGEN -minify -mo &quot;@(IntermediateAssembly)&quot; -incremental &quot;$(OptimizationDataFile)&quot;" />
-    <Exec Command="$(FakeSignToolPath) &quot;@(IntermediateAssembly)&quot;" />
 
   </Target>
 
