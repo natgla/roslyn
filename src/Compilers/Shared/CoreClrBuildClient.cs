@@ -30,7 +30,16 @@ namespace Microsoft.CodeAnalysis.CommandLine
             // as well as the EXE argument. 
             // https://github.com/dotnet/roslyn/issues/6677
             var client = new CoreClrBuildClient(language, compileFunc);
-            var clientDir = AppContext.BaseDirectory;
+            string clientDir;
+#if (ON_PROJECTN)
+#if (ON_PROJECTN32)
+            clientDir = @"C:\Windows\Microsoft.NET\Framework\v4.0.30319";
+#else
+            clientDir = @"C:\Windows\Microsoft.NET\Framework64\v4.0.30319";
+#endif
+#else
+            clientDir = AppContext.BaseDirectory;
+#endif
             var workingDir = Directory.GetCurrentDirectory();
             var buildPaths = new BuildPaths(clientDir: clientDir, workingDir: workingDir, sdkDir: null);
             return client.RunCompilation(arguments, buildPaths).ExitCode;

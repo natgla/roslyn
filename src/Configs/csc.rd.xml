@@ -43,5 +43,7 @@
     <Type Name="Roslyn.Utilities.ComStreamWrapper" Dynamic="Required All" MarshalObject="Required All" />
     <Type Name="Roslyn.Utilities.PortableShim" Dynamic="Required All" />
     <Type Name="Microsoft.CodeAnalysis.ConstantValue" Dynamic="Required All" />
+
+    <Type Name="System.Runtime.Loader.AssemblyLoadContext" Dynamic="Required All" />
   </Application>
 </Directives>

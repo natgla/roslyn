@@ -106,6 +106,7 @@
   </ImportGroup>
 
   <!-- Delete reference assemblies that are copied locally alongside csc.exe. ProjectN needs to use its own set of reference assemblies. -->
+  <!-- TODO: we need System.Runtime.Loader but it fails to compile -->
   <Target Condition="'$(BuildingWithProjectN)' == 'true'" Name="DeleteLocalReferenceAssemblies" AfterTargets="_CopyFilesMarkedCopyLocal">
     <CreateItem Include="@(ReferenceCopyLocalPaths -> '%(Filename)%(Extension)')"
                 Exclude="Microsoft.CodeAnalysis.dll;Microsoft.CodeAnalysis.pdb;Microsoft.CodeAnalysis.CSharp.dll;Microsoft.CodeAnalysis.CSharp.pdb;System.Collections.Immutable.dll;System.Reflection.Metadata.dll">

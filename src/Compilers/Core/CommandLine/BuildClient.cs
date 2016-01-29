@@ -93,6 +93,9 @@ namespace Microsoft.CodeAnalysis.CommandLine
                 return RunCompilationResult.Failed;
             }
 
+#if (ON_PROJECTN)
+            // ProjectN: Don't try to use service: it'll be more difficult to measure performance
+#else
             if (hasShared)
             {
                 var libDirectory = Environment.GetEnvironmentVariable("LIB");
@@ -118,6 +121,7 @@ namespace Microsoft.CodeAnalysis.CommandLine
                     return RunCompilationResult.Succeeded;
                 }
             }
+#endif
 
             // It's okay, and expected, for the server compilation to fail.  In that case just fall 
             // back to normal compilation. 
